@@ -1193,7 +1193,7 @@
                     </div>
                     <div class="cost-item">
                         <span>Tarifas de Despacho de Aduana</span>
-                                        <span id="customs-cost">$0.00</span>
+                        <span id="customs-cost">$0.00</span>
                     </div>
                     <div class="total-cost">
                         <span>Costo Total de Importación</span>
@@ -1699,7 +1699,140 @@
             let valueByModelChart = null;
             let shippingMethodsChart = null;
             
-            // Inicialización
+            // ============================================
+            // FUNCIONES DE ACTUALIZACIÓN UNIFICADA
+            // ============================================
+            
+            /**
+             * Función unificada para actualizar todas las visualizaciones de inventario
+             * @param {string} model - Modelo del dron que se actualizó
+             * @param {number} newStock - Nuevo valor de stock
+             */
+            function updateAllInventoryDisplays(model, newStock) {
+                // 1. Actualizar las tarjetas de producto en el panel de control
+                updateProductCardDisplay(model, newStock);
+                
+                // 2. Actualizar estadísticas generales
+                updateStatistics();
+                
+                // 3. Actualizar gráfico de inventario
+                renderInventoryChart();
+                
+                // 4. Actualizar vista de gestión de inventario
+                updateInventoryManagementView();
+                
+                // 5. Actualizar cantidades disponibles en formularios
+                updateAddStockQuantity();
+                updateReduceStockQuantity();
+                
+                // 6. Actualizar reportes
+                updateAllReports();
+            }
+            
+            /**
+             * Actualizar la visualización de una tarjeta de producto específica
+             * @param {string} model - Modelo del dron
+             * @param {number} newStock - Nuevo valor de stock
+             */
+            function updateProductCardDisplay(model, newStock) {
+                const modelIds = {
+                    'agras-t40': 't40',
+                    'agras-t20p': 't20p', 
+                    'mavic-3m': 'm3m'
+                };
+                
+                const prefix = modelIds[model];
+                if (!prefix) return;
+                
+                const product = droneProducts[model];
+                
+                // 1. Actualizar número de stock
+                const stockElement = document.getElementById(`${prefix}-stock`);
+                if (stockElement) {
+                    stockElement.textContent = newStock;
+                }
+                
+                // 2. Actualizar valor en inventario
+                const valueElement = document.getElementById(`${prefix}-value`);
+                if (valueElement && product) {
+                    const newValue = newStock * product.price;
+                    valueElement.textContent = `$${newValue.toLocaleString()}`;
+                }
+                
+                // 3. Actualizar indicador de estado
+                updateStockStatusIndicator(model, newStock);
+            }
+            
+            /**
+             * Actualizar indicador de estado de stock
+             * @param {string} model - Modelo del dron
+             * @param {number} stock - Cantidad actual de stock
+             */
+            function updateStockStatusIndicator(model, stock) {
+                const modelIds = {
+                    'agras-t40': 't40',
+                    'agras-t20p': 't20p',
+                    'mavic-3m': 'm3m'
+                };
+                
+                const prefix = modelIds[model];
+                if (!prefix) return;
+                
+                const product = droneProducts[model];
+                if (!product) return;
+                
+                const indicatorElement = document.getElementById(`${prefix}-indicator`);
+                const statusElement = document.getElementById(`${prefix}-status`);
+                const warningElement = document.getElementById(`${prefix}-min-warning`);
+                
+                if (!indicatorElement || !statusElement) return;
+                
+                // Determinar estado del stock
+                let status, indicatorClass;
+                
+                if (stock <= product.minStock) {
+                    status = 'Inventario Bajo';
+                    indicatorClass = 'low';
+                    if (warningElement) warningElement.style.display = 'block';
+                } else if (stock <= product.minStock * 2) {
+                    status = 'Inventario Medio';
+                    indicatorClass = 'medium';
+                    if (warningElement) warningElement.style.display = 'block';
+                } else {
+                    status = 'Inventario Suficiente';
+                    indicatorClass = 'high';
+                    if (warningElement) warningElement.style.display = 'none';
+                }
+                
+                // Actualizar indicador visual
+                indicatorElement.className = 'stock-indicator';
+                indicatorElement.classList.add(indicatorClass);
+                
+                // Actualizar texto de estado
+                statusElement.textContent = status;
+            }
+            
+            /**
+             * Actualizar todas las estadísticas
+             */
+            function updateStatistics() {
+                let totalDrones = 0;
+                let totalValue = 0;
+                
+                for (const model in droneProducts) {
+                    totalDrones += droneProducts[model].stock;
+                    totalValue += droneProducts[model].stock * droneProducts[model].price;
+                }
+                
+                document.getElementById('total-drones').textContent = totalDrones;
+                document.getElementById('total-value').textContent = `$${totalValue.toLocaleString()}`;
+            }
+            
+            // ============================================
+            // INICIALIZACIÓN
+            // ============================================
+            
+            // Inicializar la aplicación
             updateStatistics();
             updateDashboardProductCards();
             renderInventoryChart();
@@ -1712,7 +1845,13 @@
             // Inicializar datos de reportes
             initializeReportData();
             
-            // Configurar funcionalidad de navegación
+            // ============================================
+            // FUNCIONES DE NAVEGACIÓN Y EVENTOS
+            // ============================================
+            
+            /**
+             * Configurar sistema de navegación
+             */
             function setupNavigation() {
                 // Eventos de clic en navegación
                 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1770,7 +1909,9 @@
                 });
             }
             
-            // Configurar detectores de eventos
+            /**
+             * Configurar detectores de eventos
+             */
             function setupEventListeners() {
                 // Evento del botón calcular costo
                 document.getElementById('calculate-cost').addEventListener('click', calculateImportCost);
@@ -1820,19 +1961,13 @@
                     if (quantity > 0) {
                         const oldStock = droneProducts[model].stock;
                         droneProducts[model].stock += quantity;
+                        const newStock = droneProducts[model].stock;
                         
                         // Registrar cambio de inventario
-                        recordInventoryChange(model, quantity, 'aumento', oldStock, droneProducts[model].stock);
+                        recordInventoryChange(model, quantity, 'aumento', oldStock, newStock);
                         
-                        updateStatistics();
-                        updateDashboardProductCards();
-                        updateInventoryManagementView();
-                        updateAddStockQuantity();
-                        updateReduceStockQuantity();
-                        renderInventoryChart();
-                        
-                        // Actualizar reportes en tiempo real
-                        updateAllReports();
+                        // Usar función unificada para actualizar todas las visualizaciones
+                        updateAllInventoryDisplays(model, newStock);
                         
                         showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
                     }
@@ -1847,22 +1982,16 @@
                     if (quantity > 0 && quantity <= droneProducts[model].stock) {
                         const oldStock = droneProducts[model].stock;
                         droneProducts[model].stock -= quantity;
+                        const newStock = droneProducts[model].stock;
                         
                         // Registrar la reducción
                         recordInventoryReduction(model, quantity, reason, '');
                         
                         // Registrar cambio de inventario
-                        recordInventoryChange(model, -quantity, 'reducción', oldStock, droneProducts[model].stock);
+                        recordInventoryChange(model, -quantity, 'reducción', oldStock, newStock);
                         
-                        updateStatistics();
-                        updateDashboardProductCards();
-                        updateInventoryManagementView();
-                        updateAddStockQuantity();
-                        updateReduceStockQuantity();
-                        renderInventoryChart();
-                        
-                        // Actualizar reportes en tiempo real
-                        updateAllReports();
+                        // Usar función unificada para actualizar todas las visualizaciones
+                        updateAllInventoryDisplays(model, newStock);
                         
                         showSuccessMessage(`Reducción exitosa de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
                     } else {
@@ -1974,20 +2103,13 @@
                     
                     // Actualizar inventario
                     droneProducts[model].stock += quantity;
+                    const newStock = droneProducts[model].stock;
                     
                     // Registrar cambio de inventario
-                    recordInventoryChange(model, quantity, 'importación', oldStock, droneProducts[model].stock);
+                    recordInventoryChange(model, quantity, 'importación', oldStock, newStock);
                     
-                    // Actualizar visualización
-                    updateStatistics();
-                    updateDashboardProductCards();
-                    updateInventoryManagementView();
-                    updateAddStockQuantity();
-                    updateReduceStockQuantity();
-                    renderInventoryChart();
-                    
-                    // Actualizar reportes en tiempo real
-                    updateAllReports();
+                    // Usar función unificada para actualizar todas las visualizaciones
+                    updateAllInventoryDisplays(model, newStock);
                     
                     // Cerrar modal y restablecer formulario
                     document.getElementById('stock-modal').style.display = 'none';
@@ -2027,102 +2149,33 @@
                 });
             }
             
-            // Inicializar datos de reportes
-            function initializeReportData() {
-                // Agregar algunos cambios de inventario de ejemplo para mostrar funcionalidad
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                const twoDaysAgo = new Date(today);
-                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-                
-                // Agregar datos de ejemplo
-                inventoryChanges.push({
-                    date: twoDaysAgo.toISOString().split('T')[0],
-                    model: 'DJI Agras T40',
-                    change: 5,
-                    type: 'importación',
-                    oldStock: 13,
-                    newStock: 18
-                });
-                
-                inventoryChanges.push({
-                    date: yesterday.toISOString().split('T')[0],
-                    model: 'DJI Agras T20P',
-                    change: -3,
-                    type: 'venta',
-                    oldStock: 15,
-                    newStock: 12
-                });
-                
-                inventoryChanges.push({
-                    date: today.toISOString().split('T')[0],
-                    model: 'DJI Mavic 3M',
-                    change: 2,
-                    type: 'importación',
-                    oldStock: 3,
-                    newStock: 5
-                });
-                
-                // Actualizar reportes iniciales
-                updateAllReports();
-            }
+            // ============================================
+            // FUNCIONES DE ACTUALIZACIÓN DE INTERFAZ
+            // ============================================
             
-            // Actualizar tarjetas de producto en el panel de control
+            /**
+             * Actualizar tarjetas de producto en el panel de control
+             */
             function updateDashboardProductCards() {
-                // Actualizar cada producto
+                // Para cada producto, asegurarse de que los valores están actualizados
                 for (const model in droneProducts) {
                     const product = droneProducts[model];
-                    const stockElement = document.getElementById(`${model.replace('-', '')}-stock`);
-                    const valueElement = document.getElementById(`${model.replace('-', '')}-value`);
-                    const indicatorElement = document.getElementById(`${model.replace('-', '')}-indicator`);
-                    const statusElement = document.getElementById(`${model.replace('-', '')}-status`);
-                    const warningElement = document.getElementById(`${model.replace('-', '')}-min-warning`);
-                    
-                    if (stockElement) {
-                        stockElement.textContent = product.stock;
-                    }
-                    
-                    if (valueElement) {
-                        valueElement.textContent = `$${(product.stock * product.price).toLocaleString()}`;
-                    }
-                    
-                    if (indicatorElement && statusElement) {
-                        // Determinar estado del inventario
-                        let status, indicatorClass;
-                        
-                        if (product.stock <= product.minStock) {
-                            status = 'Inventario Bajo';
-                            indicatorClass = 'low';
-                            if (warningElement) warningElement.style.display = 'block';
-                        } else if (product.stock <= product.minStock * 2) {
-                            status = 'Inventario Medio';
-                            indicatorClass = 'medium';
-                            if (warningElement) warningElement.style.display = 'block';
-                        } else {
-                            status = 'Inventario Suficiente';
-                            indicatorClass = 'high';
-                            if (warningElement) warningElement.style.display = 'none';
-                        }
-                        
-                        // Actualizar indicador visual
-                        indicatorElement.className = 'stock-indicator';
-                        indicatorElement.classList.add(indicatorClass);
-                        
-                        // Actualizar texto de estado
-                        statusElement.textContent = status;
-                    }
+                    updateProductCardDisplay(model, product.stock);
                 }
             }
             
-            // Actualizar cantidad de stock en aumento
+            /**
+             * Actualizar cantidad de stock en aumento
+             */
             function updateAddStockQuantity() {
                 const model = document.getElementById('add-model').value;
                 const currentStock = droneProducts[model].stock;
                 document.getElementById('add-current-stock').textContent = currentStock;
             }
             
-            // Actualizar cantidad de stock en reducción
+            /**
+             * Actualizar cantidad de stock en reducción
+             */
             function updateReduceStockQuantity() {
                 const model = document.getElementById('reduce-model').value;
                 const currentStock = droneProducts[model].stock;
@@ -2132,7 +2185,9 @@
                 document.getElementById('reduce-quantity').max = currentStock;
             }
             
-            // Actualizar stock en modal de reducción
+            /**
+             * Actualizar stock en modal de reducción
+             */
             function updateReduceModalStock() {
                 const model = document.getElementById('reduce-modal-model').value;
                 const currentStock = droneProducts[model].stock;
@@ -2146,7 +2201,9 @@
                 validateReduceQuantity();
             }
             
-            // Validar cantidad en modal de reducción
+            /**
+             * Validar cantidad en modal de reducción
+             */
             function validateReduceQuantity() {
                 const model = document.getElementById('reduce-modal-model').value;
                 const currentStock = droneProducts[model].stock;
@@ -2167,328 +2224,9 @@
                 }
             }
             
-            // Mostrar modal de aumento rápido
-            function showQuickAddModal(model) {
-                if (!model) return;
-                
-                // Configurar información del modelo
-                quickAddInfo.model = model;
-                quickAddInfo.quantity = 1;
-                
-                // Actualizar título del modal
-                document.getElementById('quick-add-model-name').textContent = droneProducts[model].name;
-                
-                // Resetear selección de botones
-                document.querySelectorAll('.quick-add-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                    if (btn.getAttribute('data-quantity') === '1') {
-                        btn.classList.add('selected');
-                    }
-                });
-                
-                // Ocultar campo de cantidad personalizada
-                document.getElementById('custom-quantity-group').style.display = 'none';
-                
-                // Resetear campos
-                document.getElementById('quick-add-reason').value = 'importacion';
-                document.getElementById('quick-add-notes').value = '';
-                document.getElementById('quick-add-custom-quantity').value = '1';
-                
-                // Mostrar modal
-                document.getElementById('quick-add-modal').style.display = 'flex';
-            }
-            
-            // Confirmar aumento rápido
-            function confirmQuickAdd() {
-                if (!quickAddInfo.model) return;
-                
-                let quantity = quickAddInfo.quantity;
-                
-                // Si es cantidad personalizada, obtener del input
-                if (quantity === null) {
-                    const customQuantity = parseInt(document.getElementById('quick-add-custom-quantity').value);
-                    if (isNaN(customQuantity) || customQuantity < 1) {
-                        showWarningMessage('Por favor ingrese una cantidad válida');
-                        return;
-                    }
-                    quantity = customQuantity;
-                }
-                
-                const reason = document.getElementById('quick-add-reason').value;
-                const notes = document.getElementById('quick-add-notes').value;
-                const oldStock = droneProducts[quickAddInfo.model].stock;
-                
-                // Aumentar inventario
-                droneProducts[quickAddInfo.model].stock += quantity;
-                
-                // Registrar cambio de inventario
-                recordInventoryChange(quickAddInfo.model, quantity, 'aumento rápido', oldStock, droneProducts[quickAddInfo.model].stock);
-                
-                // Actualizar visualización
-                updateStatistics();
-                updateDashboardProductCards();
-                updateInventoryManagementView();
-                updateAddStockQuantity();
-                updateReduceStockQuantity();
-                renderInventoryChart();
-                
-                // Actualizar reportes en tiempo real
-                updateAllReports();
-                
-                // Cerrar modal
-                document.getElementById('quick-add-modal').style.display = 'none';
-                
-                // Mostrar mensaje de éxito
-                showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[quickAddInfo.model].name} en inventario`);
-            }
-            
-            // Mostrar modal de reducción
-            function showReduceModal(model = null) {
-                if (!model) {
-                    model = document.getElementById('reduce-model').value;
-                }
-                
-                // Configurar modelo seleccionado
-                document.getElementById('reduce-modal-model').value = model;
-                
-                // Actualizar información de stock
-                updateReduceModalStock();
-                
-                // Configurar cantidad predeterminada
-                document.getElementById('reduce-modal-quantity').value = 1;
-                
-                // Configurar razón predeterminada
-                document.querySelectorAll('.reason-option').forEach(option => {
-                    option.classList.remove('selected');
-                    if (option.getAttribute('data-reason') === 'venta') {
-                        option.classList.add('selected');
-                    }
-                });
-                document.getElementById('selected-reason').value = 'venta';
-                
-                // Limpiar notas
-                document.getElementById('reduce-modal-notes').value = '';
-                
-                // Mostrar modal
-                document.getElementById('reduce-modal').style.display = 'flex';
-            }
-            
-            // Confirmar reducción de inventario
-            function confirmReduction() {
-                const model = document.getElementById('reduce-modal-model').value;
-                const quantity = parseInt(document.getElementById('reduce-modal-quantity').value);
-                const reason = document.getElementById('selected-reason').value;
-                const notes = document.getElementById('reduce-modal-notes').value;
-                
-                // Validar cantidad
-                if (quantity <= 0 || quantity > droneProducts[model].stock) {
-                    showWarningMessage('¡La cantidad a reducir no es válida!');
-                    return;
-                }
-                
-                const oldStock = droneProducts[model].stock;
-                
-                // Reducir inventario
-                droneProducts[model].stock -= quantity;
-                
-                // Registrar la reducción
-                recordInventoryReduction(model, quantity, reason, notes);
-                
-                // Registrar cambio de inventario
-                recordInventoryChange(model, -quantity, 'reducción', oldStock, droneProducts[model].stock);
-                
-                // Actualizar visualización
-                updateStatistics();
-                updateDashboardProductCards();
-                updateInventoryManagementView();
-                updateAddStockQuantity();
-                updateReduceStockQuantity();
-                renderInventoryChart();
-                
-                // Actualizar reportes en tiempo real
-                updateAllReports();
-                
-                // Cerrar modal
-                document.getElementById('reduce-modal').style.display = 'none';
-                
-                // Mostrar mensaje de éxito
-                const reasonText = getReasonText(reason);
-                showSuccessMessage(`Reducción exitosa de ${quantity} unidades de ${droneProducts[model].name} en inventario (${reasonText})`);
-            }
-            
-            // Obtener texto de razón
-            function getReasonText(reason) {
-                const reasons = {
-                    'venta': 'Venta a Cliente',
-                    'daño': 'Producto Dañado',
-                    'devolucion': 'Devolución al Proveedor',
-                    'uso_interno': 'Uso Interno',
-                    'otro': 'Otra Razón'
-                };
-                return reasons[reason] || 'Razón no especificada';
-            }
-            
-            // Registrar reducción de inventario
-            function recordInventoryReduction(model, quantity, reason, notes) {
-                const today = new Date().toISOString().split('T')[0];
-                const reductionRecord = {
-                    date: today,
-                    model: droneProducts[model].name,
-                    quantity: quantity,
-                    reason: getReasonText(reason),
-                    notes: notes,
-                    previousStock: droneProducts[model].stock + quantity,
-                    newStock: droneProducts[model].stock
-                };
-                
-                reductionRecords.unshift(reductionRecord);
-            }
-            
-            // Registrar cambio de inventario (para reportes en tiempo real)
-            function recordInventoryChange(model, change, type, oldStock, newStock) {
-                const today = new Date().toISOString().split('T')[0];
-                const changeRecord = {
-                    date: today,
-                    model: droneProducts[model].name,
-                    change: change,
-                    type: type,
-                    oldStock: oldStock,
-                    newStock: newStock,
-                    timestamp: new Date().getTime()
-                };
-                
-                inventoryChanges.unshift(changeRecord);
-                
-                // Mantener solo los últimos 50 cambios
-                if (inventoryChanges.length > 50) {
-                    inventoryChanges = inventoryChanges.slice(0, 50);
-                }
-            }
-            
-            // Mostrar modal de compra
-            function showPurchaseModal(model = null) {
-                if (!model) {
-                    model = document.getElementById('drone-model').value;
-                }
-                
-                const quantity = document.getElementById('quantity') ? 
-                    parseInt(document.getElementById('quantity').value) : 5;
-                
-                const shippingMethod = document.getElementById('shipping-method') ? 
-                    document.getElementById('shipping-method').value : 'sea';
-                
-                const insuranceLevel = document.getElementById('insurance') ? 
-                    document.getElementById('insurance').value : 'standard';
-                
-                // Calcular costo total
-                const totalCost = calculateDroneCost(
-                    droneProducts[model].price, 
-                    quantity, 
-                    shippingMethod, 
-                    insuranceLevel
-                );
-                
-                // Guardar información de compra actual
-                currentPurchase = {
-                    model: model,
-                    quantity: quantity,
-                    shippingMethod: shippingMethod,
-                    insuranceLevel: insuranceLevel,
-                    totalCost: totalCost
-                };
-                
-                // Actualizar resumen de compra
-                const summaryHtml = `
-                    <div class="summary-item">
-                        <span>Modelo de Dron:</span>
-                        <span>${droneProducts[model].name}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span>Cantidad:</span>
-                        <span>${quantity} unidades</span>
-                    </div>
-                    <div class="summary-item">
-                        <span>Precio Unitario:</span>
-                        <span>$${droneProducts[model].price.toLocaleString()}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span>Costo Total:</span>
-                        <span><strong>$${totalCost.toLocaleString()}</strong></span>
-                    </div>
-                `;
-                
-                document.getElementById('purchase-summary').innerHTML = summaryHtml;
-                
-                // Mostrar modal
-                document.getElementById('purchase-modal').style.display = 'flex';
-            }
-            
-            // Confirmar compra
-            function confirmPurchase() {
-                if (!currentPurchase) return;
-                
-                const shipping = document.getElementById('purchase-shipping').value;
-                const shippingText = shipping === 'air' ? 'Transporte Aéreo' : 'Transporte Marítimo';
-                const notes = document.getElementById('purchase-notes').value;
-                
-                // Agregar a registros de importación
-                const today = new Date().toISOString().split('T')[0];
-                const newRecord = {
-                    date: today,
-                    model: droneProducts[currentPurchase.model].name,
-                    quantity: currentPurchase.quantity,
-                    shipping: shippingText,
-                    cost: currentPurchase.totalCost,
-                    status: 'Pendiente de Envío'
-                };
-                
-                importRecords.unshift(newRecord);
-                
-                const oldStock = droneProducts[currentPurchase.model].stock;
-                
-                // Actualizar inventario
-                droneProducts[currentPurchase.model].stock += currentPurchase.quantity;
-                
-                // Registrar cambio de inventario
-                recordInventoryChange(currentPurchase.model, currentPurchase.quantity, 'importación', oldStock, droneProducts[currentPurchase.model].stock);
-                
-                // Actualizar visualización
-                updateStatistics();
-                updateDashboardProductCards();
-                renderImportTable();
-                updateInventoryManagementView();
-                updateAddStockQuantity();
-                updateReduceStockQuantity();
-                renderInventoryChart();
-                
-                // Actualizar reportes en tiempo real
-                updateAllReports();
-                
-                // Cerrar modal
-                document.getElementById('purchase-modal').style.display = 'none';
-                
-                // Mostrar mensaje de éxito
-                showSuccessMessage(`¡Compra exitosa de ${currentPurchase.quantity} unidades de ${droneProducts[currentPurchase.model].name}! Se ha agregado a los registros de importación.`);
-                
-                // Restablecer información de compra actual
-                currentPurchase = null;
-            }
-            
-            // Función para actualizar estadísticas
-            function updateStatistics() {
-                let totalDrones = 0;
-                let totalValue = 0;
-                
-                for (const model in droneProducts) {
-                    totalDrones += droneProducts[model].stock;
-                    totalValue += droneProducts[model].stock * droneProducts[model].price;
-                }
-                
-                document.getElementById('total-drones').textContent = totalDrones;
-                document.getElementById('total-value').textContent = `$${totalValue.toLocaleString()}`;
-            }
-            
-            // Actualizar vista de gestión de inventario
+            /**
+             * Actualizar vista de gestión de inventario
+             */
             function updateInventoryManagementView() {
                 const inventoryCards = document.querySelector('#inventory .product-cards');
                 if (inventoryCards) {
@@ -2564,7 +2302,338 @@
                 }
             }
             
-            // Renderizar tabla de registros de importación
+            // ============================================
+            // FUNCIONES DE MODALES
+            // ============================================
+            
+            /**
+             * Mostrar modal de aumento rápido
+             * @param {string} model - Modelo del dron
+             */
+            function showQuickAddModal(model) {
+                if (!model) return;
+                
+                // Configurar información del modelo
+                quickAddInfo.model = model;
+                quickAddInfo.quantity = 1;
+                
+                // Actualizar título del modal
+                document.getElementById('quick-add-model-name').textContent = droneProducts[model].name;
+                
+                // Resetear selección de botones
+                document.querySelectorAll('.quick-add-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.getAttribute('data-quantity') === '1') {
+                        btn.classList.add('selected');
+                    }
+                });
+                
+                // Ocultar campo de cantidad personalizada
+                document.getElementById('custom-quantity-group').style.display = 'none';
+                
+                // Resetear campos
+                document.getElementById('quick-add-reason').value = 'importacion';
+                document.getElementById('quick-add-notes').value = '';
+                document.getElementById('quick-add-custom-quantity').value = '1';
+                
+                // Mostrar modal
+                document.getElementById('quick-add-modal').style.display = 'flex';
+            }
+            
+            /**
+             * Confirmar aumento rápido de inventario
+             */
+            function confirmQuickAdd() {
+                if (!quickAddInfo.model) return;
+                
+                let quantity = quickAddInfo.quantity;
+                
+                // Si es cantidad personalizada, obtener del input
+                if (quantity === null) {
+                    const customQuantity = parseInt(document.getElementById('quick-add-custom-quantity').value);
+                    if (isNaN(customQuantity) || customQuantity < 1) {
+                        showWarningMessage('Por favor ingrese una cantidad válida');
+                        return;
+                    }
+                    quantity = customQuantity;
+                }
+                
+                const reason = document.getElementById('quick-add-reason').value;
+                const notes = document.getElementById('quick-add-notes').value;
+                const model = quickAddInfo.model;
+                const oldStock = droneProducts[model].stock;
+                
+                // Aumentar inventario
+                droneProducts[model].stock += quantity;
+                const newStock = droneProducts[model].stock;
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(model, quantity, 'aumento rápido', oldStock, newStock);
+                
+                // Usar función unificada para actualizar todas las visualizaciones
+                updateAllInventoryDisplays(model, newStock);
+                
+                // Cerrar modal
+                document.getElementById('quick-add-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
+            }
+            
+            /**
+             * Mostrar modal de reducción de inventario
+             * @param {string} model - Modelo del dron (opcional)
+             */
+            function showReduceModal(model = null) {
+                if (!model) {
+                    model = document.getElementById('reduce-model').value;
+                }
+                
+                // Configurar modelo seleccionado
+                document.getElementById('reduce-modal-model').value = model;
+                
+                // Actualizar información de stock
+                updateReduceModalStock();
+                
+                // Configurar cantidad predeterminada
+                document.getElementById('reduce-modal-quantity').value = 1;
+                
+                // Configurar razón predeterminada
+                document.querySelectorAll('.reason-option').forEach(option => {
+                    option.classList.remove('selected');
+                    if (option.getAttribute('data-reason') === 'venta') {
+                        option.classList.add('selected');
+                    }
+                });
+                document.getElementById('selected-reason').value = 'venta';
+                
+                // Limpiar notas
+                document.getElementById('reduce-modal-notes').value = '';
+                
+                // Mostrar modal
+                document.getElementById('reduce-modal').style.display = 'flex';
+            }
+            
+            /**
+             * Confirmar reducción de inventario
+             */
+            function confirmReduction() {
+                const model = document.getElementById('reduce-modal-model').value;
+                const quantity = parseInt(document.getElementById('reduce-modal-quantity').value);
+                const reason = document.getElementById('selected-reason').value;
+                const notes = document.getElementById('reduce-modal-notes').value;
+                
+                // Validar cantidad
+                if (quantity <= 0 || quantity > droneProducts[model].stock) {
+                    showWarningMessage('¡La cantidad a reducir no es válida!');
+                    return;
+                }
+                
+                const oldStock = droneProducts[model].stock;
+                
+                // Reducir inventario
+                droneProducts[model].stock -= quantity;
+                const newStock = droneProducts[model].stock;
+                
+                // Registrar la reducción
+                recordInventoryReduction(model, quantity, reason, notes);
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(model, -quantity, 'reducción', oldStock, newStock);
+                
+                // Usar función unificada para actualizar todas las visualizaciones
+                updateAllInventoryDisplays(model, newStock);
+                
+                // Cerrar modal
+                document.getElementById('reduce-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                const reasonText = getReasonText(reason);
+                showSuccessMessage(`Reducción exitosa de ${quantity} unidades de ${droneProducts[model].name} en inventario (${reasonText})`);
+            }
+            
+            /**
+             * Mostrar modal de compra
+             * @param {string} model - Modelo del dron (opcional)
+             */
+            function showPurchaseModal(model = null) {
+                if (!model) {
+                    model = document.getElementById('drone-model').value;
+                }
+                
+                const quantity = document.getElementById('quantity') ? 
+                    parseInt(document.getElementById('quantity').value) : 5;
+                
+                const shippingMethod = document.getElementById('shipping-method') ? 
+                    document.getElementById('shipping-method').value : 'sea';
+                
+                const insuranceLevel = document.getElementById('insurance') ? 
+                    document.getElementById('insurance').value : 'standard';
+                
+                // Calcular costo total
+                const totalCost = calculateDroneCost(
+                    droneProducts[model].price, 
+                    quantity, 
+                    shippingMethod, 
+                    insuranceLevel
+                );
+                
+                // Guardar información de compra actual
+                currentPurchase = {
+                    model: model,
+                    quantity: quantity,
+                    shippingMethod: shippingMethod,
+                    insuranceLevel: insuranceLevel,
+                    totalCost: totalCost
+                };
+                
+                // Actualizar resumen de compra
+                const summaryHtml = `
+                    <div class="summary-item">
+                        <span>Modelo de Dron:</span>
+                        <span>${droneProducts[model].name}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Cantidad:</span>
+                        <span>${quantity} unidades</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Precio Unitario:</span>
+                        <span>$${droneProducts[model].price.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Costo Total:</span>
+                        <span><strong>$${totalCost.toLocaleString()}</strong></span>
+                    </div>
+                `;
+                
+                document.getElementById('purchase-summary').innerHTML = summaryHtml;
+                
+                // Mostrar modal
+                document.getElementById('purchase-modal').style.display = 'flex';
+            }
+            
+            /**
+             * Confirmar compra
+             */
+            function confirmPurchase() {
+                if (!currentPurchase) return;
+                
+                const shipping = document.getElementById('purchase-shipping').value;
+                const shippingText = shipping === 'air' ? 'Transporte Aéreo' : 'Transporte Marítimo';
+                const notes = document.getElementById('purchase-notes').value;
+                
+                // Agregar a registros de importación
+                const today = new Date().toISOString().split('T')[0];
+                const newRecord = {
+                    date: today,
+                    model: droneProducts[currentPurchase.model].name,
+                    quantity: currentPurchase.quantity,
+                    shipping: shippingText,
+                    cost: currentPurchase.totalCost,
+                    status: 'Pendiente de Envío'
+                };
+                
+                importRecords.unshift(newRecord);
+                
+                const oldStock = droneProducts[currentPurchase.model].stock;
+                
+                // Actualizar inventario
+                droneProducts[currentPurchase.model].stock += currentPurchase.quantity;
+                const newStock = droneProducts[currentPurchase.model].stock;
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(currentPurchase.model, currentPurchase.quantity, 'importación', oldStock, newStock);
+                
+                // Usar función unificada para actualizar todas las visualizaciones
+                updateAllInventoryDisplays(currentPurchase.model, newStock);
+                
+                // Actualizar tabla de importaciones
+                renderImportTable();
+                
+                // Cerrar modal
+                document.getElementById('purchase-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                showSuccessMessage(`¡Compra exitosa de ${currentPurchase.quantity} unidades de ${droneProducts[currentPurchase.model].name}! Se ha agregado a los registros de importación.`);
+                
+                // Restablecer información de compra actual
+                currentPurchase = null;
+            }
+            
+            // ============================================
+            // FUNCIONES DE REGISTRO Y DATOS
+            // ============================================
+            
+            /**
+             * Obtener texto de razón
+             * @param {string} reason - Código de razón
+             * @returns {string} Texto de la razón
+             */
+            function getReasonText(reason) {
+                const reasons = {
+                    'venta': 'Venta a Cliente',
+                    'daño': 'Producto Dañado',
+                    'devolucion': 'Devolución al Proveedor',
+                    'uso_interno': 'Uso Interno',
+                    'otro': 'Otra Razón'
+                };
+                return reasons[reason] || 'Razón no especificada';
+            }
+            
+            /**
+             * Registrar reducción de inventario
+             * @param {string} model - Modelo del dron
+             * @param {number} quantity - Cantidad reducida
+             * @param {string} reason - Razón de la reducción
+             * @param {string} notes - Notas adicionales
+             */
+            function recordInventoryReduction(model, quantity, reason, notes) {
+                const today = new Date().toISOString().split('T')[0];
+                const reductionRecord = {
+                    date: today,
+                    model: droneProducts[model].name,
+                    quantity: quantity,
+                    reason: getReasonText(reason),
+                    notes: notes,
+                    previousStock: droneProducts[model].stock + quantity,
+                    newStock: droneProducts[model].stock
+                };
+                
+                reductionRecords.unshift(reductionRecord);
+            }
+            
+            /**
+             * Registrar cambio de inventario (para reportes en tiempo real)
+             * @param {string} model - Modelo del dron
+             * @param {number} change - Cambio en cantidad
+             * @param {string} type - Tipo de cambio
+             * @param {number} oldStock - Stock anterior
+             * @param {number} newStock - Nuevo stock
+             */
+            function recordInventoryChange(model, change, type, oldStock, newStock) {
+                const today = new Date().toISOString().split('T')[0];
+                const changeRecord = {
+                    date: today,
+                    model: droneProducts[model].name,
+                    change: change,
+                    type: type,
+                    oldStock: oldStock,
+                    newStock: newStock,
+                    timestamp: new Date().getTime()
+                };
+                
+                inventoryChanges.unshift(changeRecord);
+                
+                // Mantener solo los últimos 50 cambios
+                if (inventoryChanges.length > 50) {
+                    inventoryChanges = inventoryChanges.slice(0, 50);
+                }
+            }
+            
+            /**
+             * Renderizar tabla de registros de importación
+             */
             function renderImportTable() {
                 const tableBody = document.getElementById('import-table-body');
                 tableBody.innerHTML = '';
@@ -2587,7 +2656,13 @@
                 });
             }
             
-            // Renderizar gráfico de inventario (en tiempo real)
+            // ============================================
+            // FUNCIONES DE GRÁFICOS
+            // ============================================
+            
+            /**
+             * Renderizar gráfico de inventario (en tiempo real)
+             */
             function renderInventoryChart() {
                 const ctx = document.getElementById('inventoryChart').getContext('2d');
                 
@@ -2644,7 +2719,56 @@
                 });
             }
             
-            // Actualizar todos los reportes
+            // ============================================
+            // FUNCIONES DE REPORTES
+            // ============================================
+            
+            /**
+             * Inicializar datos de reportes
+             */
+            function initializeReportData() {
+                // Agregar algunos cambios de inventario de ejemplo para mostrar funcionalidad
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const twoDaysAgo = new Date(today);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                
+                // Agregar datos de ejemplo
+                inventoryChanges.push({
+                    date: twoDaysAgo.toISOString().split('T')[0],
+                    model: 'DJI Agras T40',
+                    change: 5,
+                    type: 'importación',
+                    oldStock: 13,
+                    newStock: 18
+                });
+                
+                inventoryChanges.push({
+                    date: yesterday.toISOString().split('T')[0],
+                    model: 'DJI Agras T20P',
+                    change: -3,
+                    type: 'venta',
+                    oldStock: 15,
+                    newStock: 12
+                });
+                
+                inventoryChanges.push({
+                    date: today.toISOString().split('T')[0],
+                    model: 'DJI Mavic 3M',
+                    change: 2,
+                    type: 'importación',
+                    oldStock: 3,
+                    newStock: 5
+                });
+                
+                // Actualizar reportes iniciales
+                updateAllReports();
+            }
+            
+            /**
+             * Actualizar todos los reportes
+             */
             function updateAllReports() {
                 updateReportMetrics();
                 renderInventoryTrendChart();
@@ -2655,7 +2779,9 @@
                 renderRecentChangesTable();
             }
             
-            // Actualizar métricas de reportes
+            /**
+             * Actualizar métricas de reportes
+             */
             function updateReportMetrics() {
                 // Calcular métricas
                 let totalDrones = 0;
@@ -2707,7 +2833,9 @@
                 }
             }
             
-            // Renderizar gráfico de tendencias de inventario
+            /**
+             * Renderizar gráfico de tendencias de inventario
+             */
             function renderInventoryTrendChart() {
                 const ctx = document.getElementById('inventoryTrendChart').getContext('2d');
                 
@@ -2815,7 +2943,9 @@
                 });
             }
             
-            // Renderizar gráfico de distribución por modelo
+            /**
+             * Renderizar gráfico de distribución por modelo
+             */
             function renderModelDistributionChart() {
                 const ctx = document.getElementById('modelDistributionChart').getContext('2d');
                 
@@ -2857,7 +2987,9 @@
                 });
             }
             
-            // Renderizar gráfico de análisis de importaciones
+            /**
+             * Renderizar gráfico de análisis de importaciones
+             */
             function renderImportAnalysisChart() {
                 const ctx = document.getElementById('importAnalysisChart').getContext('2d');
                 
@@ -2914,7 +3046,9 @@
                 });
             }
             
-            // Renderizar gráfico de valor por modelo
+            /**
+             * Renderizar gráfico de valor por modelo
+             */
             function renderValueByModelChart() {
                 const ctx = document.getElementById('valueByModelChart').getContext('2d');
                 
@@ -2964,7 +3098,9 @@
                 });
             }
             
-            // Renderizar gráfico de métodos de envío
+            /**
+             * Renderizar gráfico de métodos de envío
+             */
             function renderShippingMethodsChart() {
                 const ctx = document.getElementById('shippingMethodsChart').getContext('2d');
                 
@@ -3015,7 +3151,9 @@
                 });
             }
             
-            // Renderizar tabla de cambios recientes
+            /**
+             * Renderizar tabla de cambios recientes
+             */
             function renderRecentChangesTable() {
                 const tableBody = document.getElementById('recent-changes-body');
                 tableBody.innerHTML = '';
@@ -3037,7 +3175,6 @@
                 recentChanges.forEach(change => {
                     const row = document.createElement('tr');
                     const changeType = change.change > 0 ? 'Aumento' : 'Reducción';
-                    const changeClass = change.change > 0 ? 'success' : change.change < 0 ? 'danger' : '';
                     const changeSign = change.change > 0 ? '+' : '';
                     
                     row.innerHTML = `
@@ -3059,7 +3196,13 @@
                 });
             }
             
-            // Calcular costo de importación
+            // ============================================
+            // FUNCIONES DE CÁLCULO DE COSTOS
+            // ============================================
+            
+            /**
+             * Calcular costo de importación
+             */
             function calculateImportCost() {
                 const model = document.getElementById('drone-model').value;
                 const quantity = parseInt(document.getElementById('quantity').value);
@@ -3093,7 +3236,14 @@
                 document.getElementById('cost-breakdown').scrollIntoView({ behavior: 'smooth' });
             }
             
-            // Calcular costo total del dron
+            /**
+             * Calcular costo total del dron
+             * @param {number} unitPrice - Precio unitario
+             * @param {number} quantity - Cantidad
+             * @param {string} shippingMethod - Método de envío
+             * @param {string} insuranceLevel - Nivel de seguro
+             * @returns {number} Costo total
+             */
             function calculateDroneCost(unitPrice, quantity, shippingMethod, insuranceLevel) {
                 const droneCost = unitPrice * quantity;
                 const shippingCost = shippingMethod === 'air' ? droneCost * 0.15 : droneCost * 0.08;
@@ -3106,7 +3256,14 @@
                 return droneCost + shippingCost + tariffCost + vatCost + insuranceCost + customsCost;
             }
             
-            // Mostrar mensaje de éxito
+            // ============================================
+            // FUNCIONES DE MENSAJES
+            // ============================================
+            
+            /**
+             * Mostrar mensaje de éxito
+             * @param {string} message - Mensaje a mostrar
+             */
             function showSuccessMessage(message) {
                 const successElement = document.getElementById('success-message');
                 const successText = document.getElementById('success-text');
@@ -3120,7 +3277,10 @@
                 }, 3000);
             }
             
-            // Mostrar mensaje de advertencia
+            /**
+             * Mostrar mensaje de advertencia
+             * @param {string} message - Mensaje a mostrar
+             */
             function showWarningMessage(message) {
                 const warningElement = document.getElementById('warning-message');
                 const warningText = document.getElementById('warning-text');
@@ -3136,3 +3296,4 @@
         });
     </script>
 </body>
+</html>
