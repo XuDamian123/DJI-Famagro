@@ -1,0 +1,3138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJI Famagro - Sistema de Gestión de Importación y Inventario de Drones Agrícolas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --dji-green: #00a65a;
+            --dji-dark: #0c0c0c;
+            --dji-gray: #f5f5f5;
+            --dji-light: #ffffff;
+            --success-color: #00a65a;
+            --warning-color: #f39c12;
+            --danger-color: #dd4b39;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Estilos del encabezado */
+        header {
+            background: linear-gradient(135deg, var(--dji-dark) 0%, #1a3c29 100%);
+            color: white;
+            padding: 20px 0;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-container i {
+            font-size: 2.8rem;
+            color: var(--dji-green);
+        }
+        
+        .logo-text h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-text p {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .company-info {
+            text-align: right;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .company-info strong {
+            color: var(--dji-green);
+        }
+        
+        .header-bottom {
+            padding: 20px 30px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navigation {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            padding: 10px 0;
+            font-weight: 600;
+            position: relative;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            color: var(--dji-green);
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--dji-green);
+            border-radius: 3px;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 30px;
+        }
+        
+        .user-profile img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--dji-green);
+        }
+        
+        /* Tarjetas de estadísticas */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--box-shadow);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+        
+        .stat-icon.inventory {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        
+        .stat-icon.cost {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        
+        .stat-icon.shipment {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+        
+        .stat-icon.value {
+            background: linear-gradient(135deg, #00a65a, #008d4c);
+        }
+        
+        .stat-content h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: var(--dji-dark);
+        }
+        
+        .stat-content p {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        /* Área de contenido principal */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dji-dark);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .card-title i {
+            font-size: 1.5rem;
+            color: var(--dji-green);
+        }
+        
+        .card-title h2 {
+            font-size: 1.6rem;
+        }
+        
+        /* Estilos de formulario */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dji-dark);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--dji-green);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 166, 90, 0.1);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--dji-green);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #008d4c;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--dji-green);
+            color: var(--dji-green);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--dji-green);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #e68910;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #d33724;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #008d4c;
+        }
+        
+        /* Estilos de tabla */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        table th {
+            background-color: var(--dji-dark);
+            color: white;
+            text-align: left;
+            padding: 15px;
+            font-weight: 600;
+        }
+        
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        /* Tarjetas de producto */
+        .product-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .product-card {
+            border: 1px solid #eaeaea;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .product-card:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .product-header {
+            background-color: var(--dji-dark);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .product-header h4 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        
+        .product-body {
+            padding: 20px;
+        }
+        
+        .product-specs {
+            margin-bottom: 15px;
+        }
+        
+        .product-spec {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #eee;
+        }
+        
+        .product-stock {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .stock-level {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stock-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .stock-indicator.high {
+            background-color: var(--success-color);
+        }
+        
+        .stock-indicator.medium {
+            background-color: var(--warning-color);
+        }
+        
+        .stock-indicator.low {
+            background-color: var(--danger-color);
+        }
+        
+        /* Desglose de costos */
+        .cost-breakdown {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: var(--border-radius);
+        }
+        
+        .cost-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .total-cost {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid var(--dji-green);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dji-dark);
+        }
+        
+        /* Contenedor de gráficos */
+        .chart-container {
+            margin-top: 20px;
+            height: 300px;
+            position: relative;
+        }
+        
+        /* Pie de página */
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .footer-links a {
+            color: var(--dji-dark);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--dji-green);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            width: 90%;
+            max-width: 600px;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h3 {
+            color: var(--dji-dark);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+            transition: color 0.3s;
+        }
+        
+        .close-btn:hover {
+            color: var(--dji-green);
+        }
+        
+        /* Diseño responsivo */
+        @media (max-width: 768px) {
+            .header-top, .header-bottom {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .company-info {
+                text-align: center;
+            }
+            
+            .navigation {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .product-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Estilos de mensaje de éxito */
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+        
+        /* Estilos de mensaje de advertencia */
+        .warning-message {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+            border: 1px solid #ffeaa7;
+            display: none;
+        }
+        
+        /* Cambio de sección */
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        /* Modal de compra */
+        .purchase-modal {
+            max-width: 500px;
+        }
+        
+        .purchase-summary {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        /* Modal de reducir inventario */
+        .reduce-modal {
+            max-width: 500px;
+        }
+        
+        .reduce-reason {
+            margin-top: 15px;
+        }
+        
+        .reason-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .reason-option {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .reason-option:hover {
+            background-color: #f9f9f9;
+            border-color: var(--dji-green);
+        }
+        
+        .reason-option.selected {
+            background-color: rgba(0, 166, 90, 0.1);
+            border-color: var(--dji-green);
+            color: var(--dji-green);
+            font-weight: 600;
+        }
+        
+        /* Indicador de cantidad disponible */
+        .available-quantity {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .quantity-warning {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        /* Controles de reportes */
+        .report-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: var(--border-radius);
+        }
+        
+        .time-filter {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .time-filter-btn {
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .time-filter-btn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .time-filter-btn.active {
+            background-color: var(--dji-green);
+            color: white;
+            border-color: var(--dji-green);
+        }
+        
+        .refresh-btn {
+            background-color: var(--dji-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #008d4c;
+        }
+        
+        /* Tarjetas de métricas */
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .metric-card h4 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: var(--dji-green);
+        }
+        
+        .metric-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Indicador de actualización en tiempo real */
+        .realtime-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--dji-green);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--dji-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 166, 90, 0.7);
+            }
+            
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(0, 166, 90, 0);
+            }
+            
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 166, 90, 0);
+            }
+        }
+        
+        /* Modal rápido para aumentar inventario desde el panel de control */
+        .quick-add-modal {
+            max-width: 400px;
+        }
+        
+        .quick-add-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .quick-add-btn {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quick-add-btn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .quick-add-btn.selected {
+            background-color: rgba(0, 166, 90, 0.1);
+            border-color: var(--dji-green);
+            color: var(--dji-green);
+            font-weight: 600;
+        }
+        
+        /* Indicador de stock mínimo */
+        .min-stock-warning {
+            color: var(--warning-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div class="logo-container">
+                    <i class="fas fa-helicopter"></i>
+                    <div class="logo-text">
+                        <h1>DJI Famagro</h1>
+                        <p>Sistema de Gestión de Importación e Inventario de Drones Agrícolas</p>
+                    </div>
+                </div>
+                <div class="company-info">
+                    <p>Especializados en drones agrícolas | Fabricado en China, Servicio en Chile</p>
+                    <p><strong>DJI Innovation</strong> - Líder mundial en drones</p>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="navigation">
+                    <a class="nav-item active" data-section="dashboard"><i class="fas fa-home"></i> Panel de Control</a>
+                    <a class="nav-item" data-section="cost-calculator"><i class="fas fa-calculator"></i> Cálculo de Costos</a>
+                    <a class="nav-item" data-section="inventory"><i class="fas fa-warehouse"></i> Gestión de Inventario</a>
+                    <a class="nav-item" data-section="import-tracking"><i class="fas fa-ship"></i> Seguimiento de Importaciones</a>
+                    <a class="nav-item" data-section="reports"><i class="fas fa-chart-line"></i> Análisis de Reportes</a>
+                </div>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Admin+Famagro&background=00a65a&color=fff" alt="Avatar de usuario">
+                    <div>
+                        <p style="font-weight: 600;">Administrador</p>
+                        <p style="font-size: 0.8rem; opacity: 0.8;">Equipo DJI Famagro</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Área de mensajes de éxito -->
+        <div id="success-message" class="success-message">
+            <i class="fas fa-check-circle"></i> <span id="success-text">¡Operación exitosa!</span>
+        </div>
+        
+        <!-- Área de mensajes de advertencia -->
+        <div id="warning-message" class="warning-message">
+            <i class="fas fa-exclamation-triangle"></i> <span id="warning-text">¡Advertencia!</span>
+        </div>
+        
+        <!-- Interfaz del Panel de Control -->
+        <div id="dashboard" class="section active">
+            <!-- Tarjetas de estadísticas -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon inventory">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-drones">47</h3>
+                        <p>Total de Drones en Inventario</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon value">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="total-value">$274,900</h3>
+                        <p>Valor Total del Inventario</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon shipment">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pending-shipments">0</h3>
+                        <p>Importaciones en Proceso</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cost">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="avg-cost">$4,250</h3>
+                        <p>Costo Promedio de Importación</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Área de contenido principal -->
+            <div class="main-content">
+                <div>
+                    <!-- Gráfico de inventario en tiempo real -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            <h2>Distribución del Estado del Inventario</h2>
+                            <div class="realtime-indicator" style="margin-left: auto;">
+                                <div class="pulse-dot"></div>
+                                <span>Tiempo Real</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="inventoryChart"></canvas>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center;">
+                            <button class="btn btn-outline" id="refresh-inventory-chart">
+                                <i class="fas fa-sync-alt"></i> Actualizar Gráfico
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Acciones rápidas -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-bolt"></i>
+                            <h2>Acciones Rápidas</h2>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                            <button class="btn" id="quick-calc">
+                                <i class="fas fa-calculator"></i> Calcular Costos
+                            </button>
+                            <button class="btn btn-outline" id="quick-inventory">
+                                <i class="fas fa-warehouse"></i> Ver Inventario
+                            </button>
+                            <button class="btn btn-outline" id="quick-import">
+                                <i class="fas fa-ship"></i> Seguimiento de Importaciones
+                            </button>
+                            <button class="btn btn-outline" id="quick-report">
+                                <i class="fas fa-chart-line"></i> Ver Reportes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <!-- Resumen de inventario de productos INTERACTIVO -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-helicopter"></i>
+                            <h2>Resumen de Inventario de Drones Agrícolas</h2>
+                            <div class="realtime-indicator" style="margin-left: auto;">
+                                <div class="pulse-dot"></div>
+                                <span>Interactivo</span>
+                            </div>
+                        </div>
+                        
+                        <div class="product-cards">
+                            <!-- Agras T40 -->
+                            <div class="product-card">
+                                <div class="product-header" style="background: linear-gradient(135deg, #2c3e50, #4a6491);">
+                                    <h4>DJI Agras T40</h4>
+                                    <p>Dron Agrícola de Pulverización Flagship</p>
+                                </div>
+                                <div class="product-body">
+                                    <div class="product-specs">
+                                        <div class="product-spec">
+                                            <span>Inventario Actual</span>
+                                            <span id="t40-stock">18</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Precio Unitario</span>
+                                            <span>$8,500</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Valor en Inventario</span>
+                                            <span id="t40-value">$153,000</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Stock Mínimo</span>
+                                            <span>5</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-stock-warning" id="t40-min-warning" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle"></i> Cerca del stock mínimo
+                                    </div>
+                                    <div class="product-stock">
+                                        <div class="stock-level">
+                                            <div class="stock-indicator high" id="t40-indicator"></div>
+                                            <span id="t40-status">Inventario Suficiente</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline btn-small increase-btn" data-model="agras-t40" style="margin-bottom: 5px;">
+                                                <i class="fas fa-plus"></i> Aumentar
+                                            </button>
+                                            <button class="btn btn-outline btn-small reduce-btn" data-model="agras-t40" style="background-color: transparent; border-color: var(--warning-color); color: var(--warning-color);">
+                                                <i class="fas fa-minus"></i> Reducir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Agras T20P -->
+                            <div class="product-card">
+                                <div class="product-header" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">
+                                    <h4>DJI Agras T20P</h4>
+                                    <p>Dron Agrícola de Pulverización Eficiente</p>
+                                </div>
+                                <div class="product-body">
+                                    <div class="product-specs">
+                                        <div class="product-spec">
+                                            <span>Inventario Actual</span>
+                                            <span id="t20p-stock">12</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Precio Unitario</span>
+                                            <span>$5,200</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Valor en Inventario</span>
+                                            <span id="t20p-value">$62,400</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Stock Mínimo</span>
+                                            <span>5</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-stock-warning" id="t20p-min-warning" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle"></i> Cerca del stock mínimo
+                                    </div>
+                                    <div class="product-stock">
+                                        <div class="stock-level">
+                                            <div class="stock-indicator medium" id="t20p-indicator"></div>
+                                            <span id="t20p-status">Inventario Medio</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline btn-small increase-btn" data-model="agras-t20p" style="margin-bottom: 5px;">
+                                                <i class="fas fa-plus"></i> Aumentar
+                                            </button>
+                                            <button class="btn btn-outline btn-small reduce-btn" data-model="agras-t20p" style="background-color: transparent; border-color: var(--warning-color); color: var(--warning-color);">
+                                                <i class="fas fa-minus"></i> Reducir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Mavic 3M -->
+                            <div class="product-card">
+                                <div class="product-header" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);">
+                                    <h4>DJI Mavic 3M</h4>
+                                    <p>Dron Multifuncional de Topografía y Monitoreo</p>
+                                </div>
+                                <div class="product-body">
+                                    <div class="product-specs">
+                                        <div class="product-spec">
+                                            <span>Inventario Actual</span>
+                                            <span id="m3m-stock">5</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Precio Unitario</span>
+                                            <span>$6,800</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Valor en Inventario</span>
+                                            <span id="m3m-value">$34,000</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Stock Mínimo</span>
+                                            <span>3</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-stock-warning" id="m3m-min-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Cerca del stock mínimo
+                                    </div>
+                                    <div class="product-stock">
+                                        <div class="stock-level">
+                                            <div class="stock-indicator low" id="m3m-indicator"></div>
+                                            <span id="m3m-status">Inventario Bajo</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline btn-small increase-btn" data-model="mavic-3m" style="margin-bottom: 5px;">
+                                                <i class="fas fa-plus"></i> Aumentar
+                                            </button>
+                                            <button class="btn btn-outline btn-small reduce-btn" data-model="mavic-3m" style="background-color: transparent; border-color: var(--warning-color); color: var(--warning-color);">
+                                                <i class="fas fa-minus"></i> Reducir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 25px;">
+                            <h3 style="margin-bottom: 15px;">Operaciones de Inventario</h3>
+                            <div style="display: flex; gap: 15px;">
+                                <button class="btn" id="add-stock-btn">
+                                    <i class="fas fa-plus"></i> Aumentar Inventario
+                                </button>
+                                <button class="btn btn-warning" id="reduce-stock-main-btn">
+                                    <i class="fas fa-minus"></i> Reducir Inventario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interfaz de Cálculo de Costos -->
+        <div id="cost-calculator" class="section">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-calculator"></i>
+                    <h2>Calculadora de Costos de Importación</h2>
+                </div>
+                <div class="form-group">
+                    <label for="drone-model">Seleccionar Modelo de Dron</label>
+                    <select id="drone-model" class="form-control">
+                        <option value="agras-t40">DJI Agras T40 (Pulverización Agrícola)</option>
+                        <option value="agras-t20p">DJI Agras T20P (Pulverización Agrícola)</option>
+                        <option value="mavic-3m">DJI Mavic 3M (Topografía y Monitoreo)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity">Cantidad a Importar</label>
+                    <input type="number" id="quantity" class="form-control" value="5" min="1" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="shipping-method">Método de Envío</label>
+                    <select id="shipping-method" class="form-control">
+                        <option value="air">Transporte Aéreo (7-14 días) - Más rápido, mayor costo</option>
+                        <option value="sea" selected>Transporte Marítimo (30-45 días) - Más lento, menor costo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="insurance">Nivel de Seguro</label>
+                    <select id="insurance" class="form-control">
+                        <option value="basic">Seguro Básico (1% del valor de la mercancía)</option>
+                        <option value="standard" selected>Seguro Estándar (2% del valor de la mercancía)</option>
+                        <option value="premium">Seguro Premium (3% del valor de la mercancía)</option>
+                    </select>
+                </div>
+                
+                <button class="btn" id="calculate-cost" style="width: 100%;">
+                    <i class="fas fa-calculator"></i> Calcular Costo Total de Importación
+                </button>
+                
+                <div class="cost-breakdown" id="cost-breakdown" style="display: none;">
+                    <h3>Desglose de Costos</h3>
+                    <div class="cost-item">
+                        <span>Costo del Dron</span>
+                        <span id="drone-cost">$0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>Gastos de Envío</span>
+                        <span id="shipping-cost">$0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>Arancel de Chile (6%)</span>
+                        <span id="tariff-cost">$0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>IVA (19%)</span>
+                        <span id="vat-cost">$0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>Costo del Seguro</span>
+                        <span id="insurance-cost">$0.00</span>
+                    </div>
+                    <div class="cost-item">
+                        <span>Tarifas de Despacho de Aduana</span>
+                                        <span id="customs-cost">$0.00</span>
+                    </div>
+                    <div class="total-cost">
+                        <span>Costo Total de Importación</span>
+                        <span id="total-cost">$0.00</span>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> Nota: Este cálculo es una estimación. Los costos reales pueden variar debido a fluctuaciones cambiarias y circunstancias específicas de aduana.
+                    </div>
+                    
+                    <button class="btn btn-success" id="purchase-calc" style="margin-top: 20px; width: 100%;">
+                        <i class="fas fa-shopping-cart"></i> Confirmar Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interfaz de Gestión de Inventario -->
+        <div id="inventory" class="section">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-warehouse"></i>
+                    <h2>Gestión de Inventario</h2>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3>Estado Actual del Inventario</h3>
+                    <div class="product-cards">
+                        <!-- Las tarjetas de producto se generarán dinámicamente mediante JavaScript -->
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Ajustes de Inventario</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div class="card">
+                            <h4>Aumentar Inventario</h4>
+                            <div class="form-group">
+                                <label>Seleccionar Modelo de Dron</label>
+                                <select id="add-model" class="form-control">
+                                    <option value="agras-t40">DJI Agras T40</option>
+                                    <option value="agras-t20p">DJI Agras T20P</option>
+                                    <option value="mavic-3m">DJI Mavic 3M</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Cantidad a Aumentar</label>
+                                <input type="number" id="add-quantity" class="form-control" value="1" min="1">
+                                <div class="available-quantity">Inventario actual: <span id="add-current-stock">18</span> unidades</div>
+                            </div>
+                            <button class="btn" id="confirm-add">
+                                <i class="fas fa-plus"></i> Confirmar Aumento
+                            </button>
+                        </div>
+                        
+                        <div class="card">
+                            <h4>Reducir Inventario</h4>
+                            <div class="form-group">
+                                <label>Seleccionar Modelo de Dron</label>
+                                <select id="reduce-model" class="form-control">
+                                    <option value="agras-t40">DJI Agras T40</option>
+                                    <option value="agras-t20p">DJI Agras T20P</option>
+                                    <option value="mavic-3m">DJI Mavic 3M</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Cantidad a Reducir</label>
+                                <input type="number" id="reduce-quantity" class="form-control" value="1" min="1">
+                                <div class="available-quantity">Inventario actual: <span id="reduce-current-stock">18</span> unidades</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Razón de Reducción</label>
+                                <select id="reduce-reason" class="form-control">
+                                    <option value="venta">Venta a Cliente</option>
+                                    <option value="daño">Producto Dañado</option>
+                                    <option value="devolucion">Devolución al Proveedor</option>
+                                    <option value="uso_interno">Uso Interno</option>
+                                    <option value="otro">Otra Razón</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-warning" id="confirm-reduce">
+                                <i class="fas fa-minus"></i> Confirmar Reducción
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interfaz de Seguimiento de Importaciones -->
+        <div id="import-tracking" class="section">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-ship"></i>
+                    <h2>Registros de Importación</h2>
+                </div>
+                
+                <div class="table-container">
+                    <table id="import-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Modelo de Dron</th>
+                                <th>Cantidad</th>
+                                <th>Método de Envío</th>
+                                <th>Costo Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="import-table-body">
+                            <!-- Los datos de registros de importación se agregarán dinámicamente mediante JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center; color: #666;">
+                    <p><i class="fas fa-info-circle"></i> No hay registros de importación disponibles. Consulte los registros de importación después de comprar drones.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interfaz de Análisis de Reportes -->
+        <div id="reports" class="section">
+            <!-- Indicador de actualización en tiempo real -->
+            <div class="realtime-indicator">
+                <div class="pulse-dot"></div>
+                <span>Reportes en Tiempo Real</span>
+            </div>
+            
+            <!-- Controles de reportes -->
+            <div class="report-controls">
+                <div class="time-filter">
+                    <button class="time-filter-btn active" data-period="7">7 Días</button>
+                    <button class="time-filter-btn" data-period="30">30 Días</button>
+                    <button class="time-filter-btn" data-period="90">90 Días</button>
+                    <button class="time-filter-btn" data-period="365">1 Año</button>
+                    <button class="time-filter-btn" data-period="all">Todo</button>
+                </div>
+                <button class="refresh-btn" id="refresh-reports">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+            </div>
+            
+            <!-- Tarjetas de métricas clave -->
+            <div class="metric-cards">
+                <div class="metric-card">
+                    <h4 id="report-total-drones">47</h4>
+                    <p>Total de Drones</p>
+                </div>
+                <div class="metric-card">
+                    <h4 id="report-total-value">$274,900</h4>
+                    <p>Valor del Inventario</p>
+                </div>
+                <div class="metric-card">
+                    <h4 id="report-imports-total">0</h4>
+                    <p>Importaciones Totales</p>
+                </div>
+                <div class="metric-card">
+                    <h4 id="report-imports-cost">$0</h4>
+                    <p>Costos de Importación</p>
+                </div>
+                <div class="metric-card">
+                    <h4 id="report-inventory-change">0</h4>
+                    <p>Cambio de Inventario</p>
+                </div>
+            </div>
+            
+            <!-- Gráficos principales -->
+            <div class="main-content">
+                <div>
+                    <!-- Tendencias de inventario -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            <h2>Tendencias de Inventario</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="inventoryTrendChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Distribución por modelo -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            <h2>Distribución por Modelo</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="modelDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <!-- Análisis de importaciones -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-ship"></i>
+                            <h2>Análisis de Importaciones</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="importAnalysisChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Cambios de inventario recientes -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-history"></i>
+                            <h2>Cambios Recientes</h2>
+                        </div>
+                        <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                            <table id="recent-changes-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Modelo</th>
+                                        <th>Tipo</th>
+                                        <th>Cantidad</th>
+                                        <th>Nuevo Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-changes-body">
+                                    <!-- Los cambios recientes se agregarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center; color: #666;">
+                            <p><i class="fas fa-info-circle"></i> Últimos 10 cambios en el inventario</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráficos adicionales -->
+            <div class="main-content" style="margin-top: 30px;">
+                <div>
+                    <!-- Valor del inventario por modelo -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-dollar-sign"></i>
+                            <h2>Valor por Modelo</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="valueByModelChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <!-- Métodos de envío -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-plane"></i>
+                            <h2>Métodos de Envío</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="shippingMethodsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="footer-links">
+                <a href="#"><i class="fas fa-info-circle"></i> Acerca de Nosotros</a>
+                <a href="#"><i class="fas fa-headset"></i> Soporte</a>
+                <a href="#"><i class="fas fa-file-contract"></i> Términos</a>
+                <a href="#"><i class="fas fa-lock"></i> Privacidad</a>
+                <a href="#"><i class="fas fa-envelope"></i> Contacto</a>
+            </div>
+            <p>Sistema de Gestión de Importación e Inventario de Drones Agrícolas DJI Famagro &copy; 2023 | Versión 2.4</p>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: #888;">Este sistema gestiona los costos de procesamiento de importación y el inventario de almacén de drones agrícolas de China a Chile</p>
+        </footer>
+    </div>
+    
+    <!-- Modal de Compra -->
+    <div id="purchase-modal" class="modal">
+        <div class="modal-content purchase-modal">
+            <div class="modal-header">
+                <h3>Confirmar Compra</h3>
+                <button class="close-btn" id="close-purchase-modal">&times;</button>
+            </div>
+            <div id="purchase-summary" class="purchase-summary">
+                <!-- El resumen de compra se generará dinámicamente mediante JavaScript -->
+            </div>
+            <div class="form-group">
+                <label for="purchase-shipping">Seleccionar Método de Envío</label>
+                <select id="purchase-shipping" class="form-control" required>
+                    <option value="air">Transporte Aéreo (7-14 días)</option>
+                    <option value="sea" selected>Transporte Marítimo (30-45 días)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="purchase-notes">Notas del Pedido</label>
+                <textarea id="purchase-notes" class="form-control" rows="3" placeholder="Ingrese información de notas del pedido..."></textarea>
+            </div>
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-outline" id="cancel-purchase" style="flex: 1;">Cancelar</button>
+                <button class="btn" id="confirm-purchase" style="flex: 2;">Confirmar Compra y Agregar a Registros de Importación</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Reducción de Inventario -->
+    <div id="reduce-modal" class="modal">
+        <div class="modal-content reduce-modal">
+            <div class="modal-header">
+                <h3>Reducir Inventario</h3>
+                <button class="close-btn" id="close-reduce-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="reduce-modal-model">Seleccionar Modelo de Dron</label>
+                <select id="reduce-modal-model" class="form-control" required>
+                    <option value="agras-t40">DJI Agras T40</option>
+                    <option value="agras-t20p">DJI Agras T20P</option>
+                    <option value="mavic-3m">DJI Mavic 3M</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="reduce-modal-quantity">Cantidad a Reducir</label>
+                <input type="number" id="reduce-modal-quantity" class="form-control" min="1" value="1" required>
+                <div class="available-quantity">Inventario disponible: <span id="reduce-available-stock">0</span> unidades</div>
+                <div id="reduce-quantity-warning" class="available-quantity quantity-warning" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i> La cantidad a reducir excede el inventario disponible
+                </div>
+            </div>
+            
+            <div class="form-group reduce-reason">
+                <label>Razón de Reducción</label>
+                <div class="reason-options">
+                    <div class="reason-option" data-reason="venta">Venta a Cliente</div>
+                    <div class="reason-option" data-reason="daño">Producto Dañado</div>
+                    <div class="reason-option" data-reason="devolucion">Devolución al Proveedor</div>
+                    <div class="reason-option" data-reason="uso_interno">Uso Interno</div>
+                </div>
+                <input type="hidden" id="selected-reason" value="venta">
+            </div>
+            
+            <div class="form-group">
+                <label for="reduce-modal-notes">Notas Adicionales</label>
+                <textarea id="reduce-modal-notes" class="form-control" rows="3" placeholder="Ingrese detalles adicionales sobre la reducción de inventario..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-outline" id="cancel-reduce" style="flex: 1;">Cancelar</button>
+                <button class="btn btn-warning" id="confirm-reduce-modal" style="flex: 2;">
+                    <i class="fas fa-minus-circle"></i> Confirmar Reducción de Inventario
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Aumento de Inventario (desde panel de control) -->
+    <div id="quick-add-modal" class="modal">
+        <div class="modal-content quick-add-modal">
+            <div class="modal-header">
+                <h3 id="quick-add-title">Aumentar Inventario - <span id="quick-add-model-name">DJI Agras T40</span></h3>
+                <button class="close-btn" id="close-quick-add-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Cantidad a Aumentar</label>
+                <div class="quick-add-buttons">
+                    <div class="quick-add-btn" data-quantity="1">+1</div>
+                    <div class="quick-add-btn" data-quantity="5">+5</div>
+                    <div class="quick-add-btn" data-quantity="10">+10</div>
+                    <div class="quick-add-btn" data-quantity="custom">Personalizado</div>
+                </div>
+            </div>
+            
+            <div class="form-group" id="custom-quantity-group" style="display: none;">
+                <label for="quick-add-custom-quantity">Cantidad Personalizada</label>
+                <input type="number" id="quick-add-custom-quantity" class="form-control" min="1" value="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="quick-add-reason">Razón del Aumento</label>
+                <select id="quick-add-reason" class="form-control">
+                    <option value="importacion">Importación</option>
+                    <option value="reabastecimiento">Reabastecimiento</option>
+                    <option value="transferencia">Transferencia de Almacén</option>
+                    <option value="otro">Otra Razón</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="quick-add-notes">Notas (Opcional)</label>
+                <textarea id="quick-add-notes" class="form-control" rows="2" placeholder="Ingrese notas adicionales..."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn btn-outline" id="cancel-quick-add" style="flex: 1;">Cancelar</button>
+                <button class="btn btn-success" id="confirm-quick-add" style="flex: 2;">
+                    <i class="fas fa-plus-circle"></i> Confirmar Aumento
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Aumento de Inventario (completo) -->
+    <div id="stock-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Aumentar Inventario</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <form id="stock-form">
+                <div class="form-group">
+                    <label for="modal-drone-model">Seleccionar Modelo de Dron</label>
+                    <select id="modal-drone-model" class="form-control" required>
+                        <option value="agras-t40">DJI Agras T40</option>
+                        <option value="agras-t20p">DJI Agras T20P</option>
+                        <option value="mavic-3m">DJI Mavic 3M</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modal-quantity">Cantidad a Aumentar</label>
+                    <input type="number" id="modal-quantity" class="form-control" min="1" max="50" value="5" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modal-supplier">Proveedor</label>
+                    <select id="modal-supplier" class="form-control" required>
+                        <option value="dji-china">Sede Central de DJI China</option>
+                        <option value="dji-shenzhen">Fábrica de DJI Shenzhen</option>
+                        <option value="dji-shanghai">Centro de Distribución de DJI Shanghai</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modal-notes">Notas</label>
+                    <textarea id="modal-notes" class="form-control" rows="3" placeholder="Ingrese información de notas para el aumento de inventario..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success" style="width: 100%;">
+                    <i class="fas fa-plus-circle"></i> Confirmar Aumento de Inventario
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Inicialización de datos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Datos de productos de drones
+            const droneProducts = {
+                'agras-t40': {
+                    name: 'DJI Agras T40',
+                    price: 8500,
+                    stock: 18,
+                    minStock: 5,
+                    description: 'Dron agrícola de pulverización flagship, capacidad de pulverización de 40kg',
+                    color: '#2c3e50'
+                },
+                'agras-t20p': {
+                    name: 'DJI Agras T20P',
+                    price: 5200,
+                    stock: 12,
+                    minStock: 5,
+                    description: 'Dron agrícola de pulverización eficiente, capacidad de pulverización de 20kg',
+                    color: '#27ae60'
+                },
+                'mavic-3m': {
+                    name: 'DJI Mavic 3M',
+                    price: 6800,
+                    stock: 5,
+                    minStock: 3,
+                    description: 'Dron multifuncional de topografía y monitoreo, cámara multiespectral',
+                    color: '#8e44ad'
+                }
+            };
+            
+            // Datos de registros de importación - inicialmente vacío
+            let importRecords = [];
+            
+            // Datos de reducciones de inventario
+            let reductionRecords = [];
+            
+            // Datos de cambios de inventario (para reportes en tiempo real)
+            let inventoryChanges = [];
+            
+            // Información de compra actual
+            let currentPurchase = null;
+            
+            // Información de reducción actual
+            let currentReduction = null;
+            
+            // Información de aumento rápido actual
+            let quickAddInfo = {
+                model: null,
+                quantity: 1
+            };
+            
+            // Período de tiempo para reportes
+            let reportTimePeriod = 7; // 7 días por defecto
+            
+            // Referencias a gráficos
+            let inventoryTrendChart = null;
+            let modelDistributionChart = null;
+            let importAnalysisChart = null;
+            let valueByModelChart = null;
+            let shippingMethodsChart = null;
+            
+            // Inicialización
+            updateStatistics();
+            updateDashboardProductCards();
+            renderInventoryChart();
+            setupNavigation();
+            setupEventListeners();
+            updateInventoryManagementView();
+            updateAddStockQuantity();
+            updateReduceStockQuantity();
+            
+            // Inicializar datos de reportes
+            initializeReportData();
+            
+            // Configurar funcionalidad de navegación
+            function setupNavigation() {
+                // Eventos de clic en navegación
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const sectionId = this.getAttribute('data-section');
+                        
+                        // Actualizar elemento de navegación activo
+                        document.querySelectorAll('.nav-item').forEach(nav => {
+                            nav.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        
+                        // Mostrar sección correspondiente
+                        document.querySelectorAll('.section').forEach(section => {
+                            section.classList.remove('active');
+                        });
+                        document.getElementById(sectionId).classList.add('active');
+                        
+                        // Si es la sección de reportes, actualizar gráficos
+                        if (sectionId === 'reports') {
+                            setTimeout(() => {
+                                updateAllReports();
+                            }, 100);
+                        }
+                        
+                        // Si es la sección de inventario, actualizar cantidades
+                        if (sectionId === 'inventory') {
+                            updateAddStockQuantity();
+                            updateReduceStockQuantity();
+                        }
+                        
+                        // Si es la sección del panel de control, actualizar tarjetas
+                        if (sectionId === 'dashboard') {
+                            updateDashboardProductCards();
+                        }
+                    });
+                });
+                
+                // Botones de acción rápida
+                document.getElementById('quick-calc').addEventListener('click', function() {
+                    document.querySelector('[data-section="cost-calculator"]').click();
+                });
+                
+                document.getElementById('quick-inventory').addEventListener('click', function() {
+                    document.querySelector('[data-section="inventory"]').click();
+                });
+                
+                document.getElementById('quick-import').addEventListener('click', function() {
+                    document.querySelector('[data-section="import-tracking"]').click();
+                });
+                
+                document.getElementById('quick-report').addEventListener('click', function() {
+                    document.querySelector('[data-section="reports"]').click();
+                });
+            }
+            
+            // Configurar detectores de eventos
+            function setupEventListeners() {
+                // Evento del botón calcular costo
+                document.getElementById('calculate-cost').addEventListener('click', calculateImportCost);
+                
+                // Evento del botón comprar
+                document.getElementById('purchase-calc').addEventListener('click', function() {
+                    showPurchaseModal();
+                });
+                
+                // Botones de AUMENTAR en tarjetas de producto del panel de control
+                document.querySelectorAll('.increase-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const model = this.getAttribute('data-model');
+                        showQuickAddModal(model);
+                    });
+                });
+                
+                // Botones de reducir en tarjetas de producto del panel de control
+                document.querySelectorAll('.reduce-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const model = this.getAttribute('data-model');
+                        showReduceModal(model);
+                    });
+                });
+                
+                // Botón principal de reducir inventario
+                document.getElementById('reduce-stock-main-btn').addEventListener('click', function() {
+                    showReduceModal();
+                });
+                
+                // Aumentar inventario en la interfaz de gestión
+                document.getElementById('add-stock-btn').addEventListener('click', function() {
+                    document.getElementById('stock-modal').style.display = 'flex';
+                });
+                
+                // Actualizar cantidad disponible cuando se cambia el modelo en aumento
+                document.getElementById('add-model').addEventListener('change', updateAddStockQuantity);
+                
+                // Actualizar cantidad disponible cuando se cambia el modelo en reducción
+                document.getElementById('reduce-model').addEventListener('change', updateReduceStockQuantity);
+                
+                // Botón aumentar en la interfaz de gestión de inventario
+                document.getElementById('confirm-add').addEventListener('click', function() {
+                    const model = document.getElementById('add-model').value;
+                    const quantity = parseInt(document.getElementById('add-quantity').value);
+                    
+                    if (quantity > 0) {
+                        const oldStock = droneProducts[model].stock;
+                        droneProducts[model].stock += quantity;
+                        
+                        // Registrar cambio de inventario
+                        recordInventoryChange(model, quantity, 'aumento', oldStock, droneProducts[model].stock);
+                        
+                        updateStatistics();
+                        updateDashboardProductCards();
+                        updateInventoryManagementView();
+                        updateAddStockQuantity();
+                        updateReduceStockQuantity();
+                        renderInventoryChart();
+                        
+                        // Actualizar reportes en tiempo real
+                        updateAllReports();
+                        
+                        showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
+                    }
+                });
+                
+                // Botón reducir en la interfaz de gestión de inventario
+                document.getElementById('confirm-reduce').addEventListener('click', function() {
+                    const model = document.getElementById('reduce-model').value;
+                    const quantity = parseInt(document.getElementById('reduce-quantity').value);
+                    const reason = document.getElementById('reduce-reason').value;
+                    
+                    if (quantity > 0 && quantity <= droneProducts[model].stock) {
+                        const oldStock = droneProducts[model].stock;
+                        droneProducts[model].stock -= quantity;
+                        
+                        // Registrar la reducción
+                        recordInventoryReduction(model, quantity, reason, '');
+                        
+                        // Registrar cambio de inventario
+                        recordInventoryChange(model, -quantity, 'reducción', oldStock, droneProducts[model].stock);
+                        
+                        updateStatistics();
+                        updateDashboardProductCards();
+                        updateInventoryManagementView();
+                        updateAddStockQuantity();
+                        updateReduceStockQuantity();
+                        renderInventoryChart();
+                        
+                        // Actualizar reportes en tiempo real
+                        updateAllReports();
+                        
+                        showSuccessMessage(`Reducción exitosa de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
+                    } else {
+                        showWarningMessage('¡La cantidad a reducir no puede exceder el inventario actual!');
+                    }
+                });
+                
+                // Cerrar modal de compra
+                document.getElementById('close-purchase-modal').addEventListener('click', function() {
+                    document.getElementById('purchase-modal').style.display = 'none';
+                });
+                
+                document.getElementById('cancel-purchase').addEventListener('click', function() {
+                    document.getElementById('purchase-modal').style.display = 'none';
+                });
+                
+                // Confirmar compra
+                document.getElementById('confirm-purchase').addEventListener('click', confirmPurchase);
+                
+                // Cerrar modal de reducción
+                document.getElementById('close-reduce-modal').addEventListener('click', function() {
+                    document.getElementById('reduce-modal').style.display = 'none';
+                });
+                
+                document.getElementById('cancel-reduce').addEventListener('click', function() {
+                    document.getElementById('reduce-modal').style.display = 'none';
+                });
+                
+                // Confirmar reducción en modal
+                document.getElementById('confirm-reduce-modal').addEventListener('click', confirmReduction);
+                
+                // Cerrar modal de aumento rápido
+                document.getElementById('close-quick-add-modal').addEventListener('click', function() {
+                    document.getElementById('quick-add-modal').style.display = 'none';
+                });
+                
+                document.getElementById('cancel-quick-add').addEventListener('click', function() {
+                    document.getElementById('quick-add-modal').style.display = 'none';
+                });
+                
+                // Cerrar modal de inventario
+                document.getElementById('close-modal').addEventListener('click', function() {
+                    document.getElementById('stock-modal').style.display = 'none';
+                });
+                
+                // Validar cantidad en modal de reducción
+                document.getElementById('reduce-modal-quantity').addEventListener('input', validateReduceQuantity);
+                
+                // Seleccionar razón de reducción
+                document.querySelectorAll('.reason-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Remover selección anterior
+                        document.querySelectorAll('.reason-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        // Agregar selección actual
+                        this.classList.add('selected');
+                        document.getElementById('selected-reason').value = this.getAttribute('data-reason');
+                    });
+                });
+                
+                // Cambiar modelo en modal de reducción
+                document.getElementById('reduce-modal-model').addEventListener('change', function() {
+                    updateReduceModalStock();
+                });
+                
+                // Botones de cantidad rápida en modal de aumento rápido
+                document.querySelectorAll('.quick-add-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Remover selección anterior
+                        document.querySelectorAll('.quick-add-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                        
+                        // Agregar selección actual
+                        this.classList.add('selected');
+                        
+                        const quantityType = this.getAttribute('data-quantity');
+                        
+                        if (quantityType === 'custom') {
+                            document.getElementById('custom-quantity-group').style.display = 'block';
+                            quickAddInfo.quantity = null; // Se establecerá más tarde
+                        } else {
+                            document.getElementById('custom-quantity-group').style.display = 'none';
+                            quickAddInfo.quantity = parseInt(quantityType);
+                        }
+                    });
+                });
+                
+                // Confirmar aumento rápido
+                document.getElementById('confirm-quick-add').addEventListener('click', confirmQuickAdd);
+                
+                // Botón para actualizar gráfico de inventario
+                document.getElementById('refresh-inventory-chart').addEventListener('click', function() {
+                    renderInventoryChart();
+                    showSuccessMessage('Gráfico de inventario actualizado');
+                });
+                
+                // Envío de formulario de inventario
+                document.getElementById('stock-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const model = document.getElementById('modal-drone-model').value;
+                    const quantity = parseInt(document.getElementById('modal-quantity').value);
+                    const supplier = document.getElementById('modal-supplier').value;
+                    const notes = document.getElementById('modal-notes').value;
+                    
+                    const oldStock = droneProducts[model].stock;
+                    
+                    // Actualizar inventario
+                    droneProducts[model].stock += quantity;
+                    
+                    // Registrar cambio de inventario
+                    recordInventoryChange(model, quantity, 'importación', oldStock, droneProducts[model].stock);
+                    
+                    // Actualizar visualización
+                    updateStatistics();
+                    updateDashboardProductCards();
+                    updateInventoryManagementView();
+                    updateAddStockQuantity();
+                    updateReduceStockQuantity();
+                    renderInventoryChart();
+                    
+                    // Actualizar reportes en tiempo real
+                    updateAllReports();
+                    
+                    // Cerrar modal y restablecer formulario
+                    document.getElementById('stock-modal').style.display = 'none';
+                    this.reset();
+                    
+                    showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[model].name} en inventario`);
+                });
+                
+                // Filtros de tiempo para reportes
+                document.querySelectorAll('.time-filter-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Remover clase activa de todos los botones
+                        document.querySelectorAll('.time-filter-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        
+                        // Agregar clase activa al botón clickeado
+                        this.classList.add('active');
+                        
+                        // Actualizar período de tiempo
+                        reportTimePeriod = this.getAttribute('data-period');
+                        if (reportTimePeriod === 'all') {
+                            reportTimePeriod = 365 * 5; // 5 años para "todo"
+                        } else {
+                            reportTimePeriod = parseInt(reportTimePeriod);
+                        }
+                        
+                        // Actualizar reportes
+                        updateAllReports();
+                    });
+                });
+                
+                // Botón de actualizar reportes
+                document.getElementById('refresh-reports').addEventListener('click', function() {
+                    updateAllReports();
+                    showSuccessMessage('Reportes actualizados');
+                });
+            }
+            
+            // Inicializar datos de reportes
+            function initializeReportData() {
+                // Agregar algunos cambios de inventario de ejemplo para mostrar funcionalidad
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const twoDaysAgo = new Date(today);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                
+                // Agregar datos de ejemplo
+                inventoryChanges.push({
+                    date: twoDaysAgo.toISOString().split('T')[0],
+                    model: 'DJI Agras T40',
+                    change: 5,
+                    type: 'importación',
+                    oldStock: 13,
+                    newStock: 18
+                });
+                
+                inventoryChanges.push({
+                    date: yesterday.toISOString().split('T')[0],
+                    model: 'DJI Agras T20P',
+                    change: -3,
+                    type: 'venta',
+                    oldStock: 15,
+                    newStock: 12
+                });
+                
+                inventoryChanges.push({
+                    date: today.toISOString().split('T')[0],
+                    model: 'DJI Mavic 3M',
+                    change: 2,
+                    type: 'importación',
+                    oldStock: 3,
+                    newStock: 5
+                });
+                
+                // Actualizar reportes iniciales
+                updateAllReports();
+            }
+            
+            // Actualizar tarjetas de producto en el panel de control
+            function updateDashboardProductCards() {
+                // Actualizar cada producto
+                for (const model in droneProducts) {
+                    const product = droneProducts[model];
+                    const stockElement = document.getElementById(`${model.replace('-', '')}-stock`);
+                    const valueElement = document.getElementById(`${model.replace('-', '')}-value`);
+                    const indicatorElement = document.getElementById(`${model.replace('-', '')}-indicator`);
+                    const statusElement = document.getElementById(`${model.replace('-', '')}-status`);
+                    const warningElement = document.getElementById(`${model.replace('-', '')}-min-warning`);
+                    
+                    if (stockElement) {
+                        stockElement.textContent = product.stock;
+                    }
+                    
+                    if (valueElement) {
+                        valueElement.textContent = `$${(product.stock * product.price).toLocaleString()}`;
+                    }
+                    
+                    if (indicatorElement && statusElement) {
+                        // Determinar estado del inventario
+                        let status, indicatorClass;
+                        
+                        if (product.stock <= product.minStock) {
+                            status = 'Inventario Bajo';
+                            indicatorClass = 'low';
+                            if (warningElement) warningElement.style.display = 'block';
+                        } else if (product.stock <= product.minStock * 2) {
+                            status = 'Inventario Medio';
+                            indicatorClass = 'medium';
+                            if (warningElement) warningElement.style.display = 'block';
+                        } else {
+                            status = 'Inventario Suficiente';
+                            indicatorClass = 'high';
+                            if (warningElement) warningElement.style.display = 'none';
+                        }
+                        
+                        // Actualizar indicador visual
+                        indicatorElement.className = 'stock-indicator';
+                        indicatorElement.classList.add(indicatorClass);
+                        
+                        // Actualizar texto de estado
+                        statusElement.textContent = status;
+                    }
+                }
+            }
+            
+            // Actualizar cantidad de stock en aumento
+            function updateAddStockQuantity() {
+                const model = document.getElementById('add-model').value;
+                const currentStock = droneProducts[model].stock;
+                document.getElementById('add-current-stock').textContent = currentStock;
+            }
+            
+            // Actualizar cantidad de stock en reducción
+            function updateReduceStockQuantity() {
+                const model = document.getElementById('reduce-model').value;
+                const currentStock = droneProducts[model].stock;
+                document.getElementById('reduce-current-stock').textContent = currentStock;
+                
+                // Actualizar valor máximo del input
+                document.getElementById('reduce-quantity').max = currentStock;
+            }
+            
+            // Actualizar stock en modal de reducción
+            function updateReduceModalStock() {
+                const model = document.getElementById('reduce-modal-model').value;
+                const currentStock = droneProducts[model].stock;
+                document.getElementById('reduce-available-stock').textContent = currentStock;
+                
+                // Actualizar valor máximo del input
+                const quantityInput = document.getElementById('reduce-modal-quantity');
+                quantityInput.max = currentStock;
+                
+                // Validar cantidad actual
+                validateReduceQuantity();
+            }
+            
+            // Validar cantidad en modal de reducción
+            function validateReduceQuantity() {
+                const model = document.getElementById('reduce-modal-model').value;
+                const currentStock = droneProducts[model].stock;
+                const quantityInput = document.getElementById('reduce-modal-quantity');
+                const quantity = parseInt(quantityInput.value);
+                const warningElement = document.getElementById('reduce-quantity-warning');
+                
+                if (quantity > currentStock) {
+                    warningElement.style.display = 'block';
+                    quantityInput.style.borderColor = 'var(--danger-color)';
+                    document.getElementById('confirm-reduce-modal').disabled = true;
+                    document.getElementById('confirm-reduce-modal').style.opacity = '0.5';
+                } else {
+                    warningElement.style.display = 'none';
+                    quantityInput.style.borderColor = '';
+                    document.getElementById('confirm-reduce-modal').disabled = false;
+                    document.getElementById('confirm-reduce-modal').style.opacity = '1';
+                }
+            }
+            
+            // Mostrar modal de aumento rápido
+            function showQuickAddModal(model) {
+                if (!model) return;
+                
+                // Configurar información del modelo
+                quickAddInfo.model = model;
+                quickAddInfo.quantity = 1;
+                
+                // Actualizar título del modal
+                document.getElementById('quick-add-model-name').textContent = droneProducts[model].name;
+                
+                // Resetear selección de botones
+                document.querySelectorAll('.quick-add-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.getAttribute('data-quantity') === '1') {
+                        btn.classList.add('selected');
+                    }
+                });
+                
+                // Ocultar campo de cantidad personalizada
+                document.getElementById('custom-quantity-group').style.display = 'none';
+                
+                // Resetear campos
+                document.getElementById('quick-add-reason').value = 'importacion';
+                document.getElementById('quick-add-notes').value = '';
+                document.getElementById('quick-add-custom-quantity').value = '1';
+                
+                // Mostrar modal
+                document.getElementById('quick-add-modal').style.display = 'flex';
+            }
+            
+            // Confirmar aumento rápido
+            function confirmQuickAdd() {
+                if (!quickAddInfo.model) return;
+                
+                let quantity = quickAddInfo.quantity;
+                
+                // Si es cantidad personalizada, obtener del input
+                if (quantity === null) {
+                    const customQuantity = parseInt(document.getElementById('quick-add-custom-quantity').value);
+                    if (isNaN(customQuantity) || customQuantity < 1) {
+                        showWarningMessage('Por favor ingrese una cantidad válida');
+                        return;
+                    }
+                    quantity = customQuantity;
+                }
+                
+                const reason = document.getElementById('quick-add-reason').value;
+                const notes = document.getElementById('quick-add-notes').value;
+                const oldStock = droneProducts[quickAddInfo.model].stock;
+                
+                // Aumentar inventario
+                droneProducts[quickAddInfo.model].stock += quantity;
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(quickAddInfo.model, quantity, 'aumento rápido', oldStock, droneProducts[quickAddInfo.model].stock);
+                
+                // Actualizar visualización
+                updateStatistics();
+                updateDashboardProductCards();
+                updateInventoryManagementView();
+                updateAddStockQuantity();
+                updateReduceStockQuantity();
+                renderInventoryChart();
+                
+                // Actualizar reportes en tiempo real
+                updateAllReports();
+                
+                // Cerrar modal
+                document.getElementById('quick-add-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                showSuccessMessage(`Aumento exitoso de ${quantity} unidades de ${droneProducts[quickAddInfo.model].name} en inventario`);
+            }
+            
+            // Mostrar modal de reducción
+            function showReduceModal(model = null) {
+                if (!model) {
+                    model = document.getElementById('reduce-model').value;
+                }
+                
+                // Configurar modelo seleccionado
+                document.getElementById('reduce-modal-model').value = model;
+                
+                // Actualizar información de stock
+                updateReduceModalStock();
+                
+                // Configurar cantidad predeterminada
+                document.getElementById('reduce-modal-quantity').value = 1;
+                
+                // Configurar razón predeterminada
+                document.querySelectorAll('.reason-option').forEach(option => {
+                    option.classList.remove('selected');
+                    if (option.getAttribute('data-reason') === 'venta') {
+                        option.classList.add('selected');
+                    }
+                });
+                document.getElementById('selected-reason').value = 'venta';
+                
+                // Limpiar notas
+                document.getElementById('reduce-modal-notes').value = '';
+                
+                // Mostrar modal
+                document.getElementById('reduce-modal').style.display = 'flex';
+            }
+            
+            // Confirmar reducción de inventario
+            function confirmReduction() {
+                const model = document.getElementById('reduce-modal-model').value;
+                const quantity = parseInt(document.getElementById('reduce-modal-quantity').value);
+                const reason = document.getElementById('selected-reason').value;
+                const notes = document.getElementById('reduce-modal-notes').value;
+                
+                // Validar cantidad
+                if (quantity <= 0 || quantity > droneProducts[model].stock) {
+                    showWarningMessage('¡La cantidad a reducir no es válida!');
+                    return;
+                }
+                
+                const oldStock = droneProducts[model].stock;
+                
+                // Reducir inventario
+                droneProducts[model].stock -= quantity;
+                
+                // Registrar la reducción
+                recordInventoryReduction(model, quantity, reason, notes);
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(model, -quantity, 'reducción', oldStock, droneProducts[model].stock);
+                
+                // Actualizar visualización
+                updateStatistics();
+                updateDashboardProductCards();
+                updateInventoryManagementView();
+                updateAddStockQuantity();
+                updateReduceStockQuantity();
+                renderInventoryChart();
+                
+                // Actualizar reportes en tiempo real
+                updateAllReports();
+                
+                // Cerrar modal
+                document.getElementById('reduce-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                const reasonText = getReasonText(reason);
+                showSuccessMessage(`Reducción exitosa de ${quantity} unidades de ${droneProducts[model].name} en inventario (${reasonText})`);
+            }
+            
+            // Obtener texto de razón
+            function getReasonText(reason) {
+                const reasons = {
+                    'venta': 'Venta a Cliente',
+                    'daño': 'Producto Dañado',
+                    'devolucion': 'Devolución al Proveedor',
+                    'uso_interno': 'Uso Interno',
+                    'otro': 'Otra Razón'
+                };
+                return reasons[reason] || 'Razón no especificada';
+            }
+            
+            // Registrar reducción de inventario
+            function recordInventoryReduction(model, quantity, reason, notes) {
+                const today = new Date().toISOString().split('T')[0];
+                const reductionRecord = {
+                    date: today,
+                    model: droneProducts[model].name,
+                    quantity: quantity,
+                    reason: getReasonText(reason),
+                    notes: notes,
+                    previousStock: droneProducts[model].stock + quantity,
+                    newStock: droneProducts[model].stock
+                };
+                
+                reductionRecords.unshift(reductionRecord);
+            }
+            
+            // Registrar cambio de inventario (para reportes en tiempo real)
+            function recordInventoryChange(model, change, type, oldStock, newStock) {
+                const today = new Date().toISOString().split('T')[0];
+                const changeRecord = {
+                    date: today,
+                    model: droneProducts[model].name,
+                    change: change,
+                    type: type,
+                    oldStock: oldStock,
+                    newStock: newStock,
+                    timestamp: new Date().getTime()
+                };
+                
+                inventoryChanges.unshift(changeRecord);
+                
+                // Mantener solo los últimos 50 cambios
+                if (inventoryChanges.length > 50) {
+                    inventoryChanges = inventoryChanges.slice(0, 50);
+                }
+            }
+            
+            // Mostrar modal de compra
+            function showPurchaseModal(model = null) {
+                if (!model) {
+                    model = document.getElementById('drone-model').value;
+                }
+                
+                const quantity = document.getElementById('quantity') ? 
+                    parseInt(document.getElementById('quantity').value) : 5;
+                
+                const shippingMethod = document.getElementById('shipping-method') ? 
+                    document.getElementById('shipping-method').value : 'sea';
+                
+                const insuranceLevel = document.getElementById('insurance') ? 
+                    document.getElementById('insurance').value : 'standard';
+                
+                // Calcular costo total
+                const totalCost = calculateDroneCost(
+                    droneProducts[model].price, 
+                    quantity, 
+                    shippingMethod, 
+                    insuranceLevel
+                );
+                
+                // Guardar información de compra actual
+                currentPurchase = {
+                    model: model,
+                    quantity: quantity,
+                    shippingMethod: shippingMethod,
+                    insuranceLevel: insuranceLevel,
+                    totalCost: totalCost
+                };
+                
+                // Actualizar resumen de compra
+                const summaryHtml = `
+                    <div class="summary-item">
+                        <span>Modelo de Dron:</span>
+                        <span>${droneProducts[model].name}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Cantidad:</span>
+                        <span>${quantity} unidades</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Precio Unitario:</span>
+                        <span>$${droneProducts[model].price.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Costo Total:</span>
+                        <span><strong>$${totalCost.toLocaleString()}</strong></span>
+                    </div>
+                `;
+                
+                document.getElementById('purchase-summary').innerHTML = summaryHtml;
+                
+                // Mostrar modal
+                document.getElementById('purchase-modal').style.display = 'flex';
+            }
+            
+            // Confirmar compra
+            function confirmPurchase() {
+                if (!currentPurchase) return;
+                
+                const shipping = document.getElementById('purchase-shipping').value;
+                const shippingText = shipping === 'air' ? 'Transporte Aéreo' : 'Transporte Marítimo';
+                const notes = document.getElementById('purchase-notes').value;
+                
+                // Agregar a registros de importación
+                const today = new Date().toISOString().split('T')[0];
+                const newRecord = {
+                    date: today,
+                    model: droneProducts[currentPurchase.model].name,
+                    quantity: currentPurchase.quantity,
+                    shipping: shippingText,
+                    cost: currentPurchase.totalCost,
+                    status: 'Pendiente de Envío'
+                };
+                
+                importRecords.unshift(newRecord);
+                
+                const oldStock = droneProducts[currentPurchase.model].stock;
+                
+                // Actualizar inventario
+                droneProducts[currentPurchase.model].stock += currentPurchase.quantity;
+                
+                // Registrar cambio de inventario
+                recordInventoryChange(currentPurchase.model, currentPurchase.quantity, 'importación', oldStock, droneProducts[currentPurchase.model].stock);
+                
+                // Actualizar visualización
+                updateStatistics();
+                updateDashboardProductCards();
+                renderImportTable();
+                updateInventoryManagementView();
+                updateAddStockQuantity();
+                updateReduceStockQuantity();
+                renderInventoryChart();
+                
+                // Actualizar reportes en tiempo real
+                updateAllReports();
+                
+                // Cerrar modal
+                document.getElementById('purchase-modal').style.display = 'none';
+                
+                // Mostrar mensaje de éxito
+                showSuccessMessage(`¡Compra exitosa de ${currentPurchase.quantity} unidades de ${droneProducts[currentPurchase.model].name}! Se ha agregado a los registros de importación.`);
+                
+                // Restablecer información de compra actual
+                currentPurchase = null;
+            }
+            
+            // Función para actualizar estadísticas
+            function updateStatistics() {
+                let totalDrones = 0;
+                let totalValue = 0;
+                
+                for (const model in droneProducts) {
+                    totalDrones += droneProducts[model].stock;
+                    totalValue += droneProducts[model].stock * droneProducts[model].price;
+                }
+                
+                document.getElementById('total-drones').textContent = totalDrones;
+                document.getElementById('total-value').textContent = `$${totalValue.toLocaleString()}`;
+            }
+            
+            // Actualizar vista de gestión de inventario
+            function updateInventoryManagementView() {
+                const inventoryCards = document.querySelector('#inventory .product-cards');
+                if (inventoryCards) {
+                    let cardsHtml = '';
+                    
+                    for (const model in droneProducts) {
+                        const product = droneProducts[model];
+                        const stockStatus = product.stock <= product.minStock ? 'low' : 
+                                           product.stock <= product.minStock * 2 ? 'medium' : 'high';
+                        const statusText = stockStatus === 'low' ? 'Inventario Bajo' : 
+                                          stockStatus === 'medium' ? 'Inventario Medio' : 'Inventario Suficiente';
+                        
+                        cardsHtml += `
+                            <div class="product-card">
+                                <div class="product-header" style="background: linear-gradient(135deg, ${product.color}, ${product.color}99);">
+                                    <h4>${product.name}</h4>
+                                    <p>${product.description}</p>
+                                </div>
+                                <div class="product-body">
+                                    <div class="product-specs">
+                                        <div class="product-spec">
+                                            <span>Inventario Actual</span>
+                                            <span>${product.stock}</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Precio Unitario</span>
+                                            <span>$${product.price.toLocaleString()}</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Valor en Inventario</span>
+                                            <span>$${(product.stock * product.price).toLocaleString()}</span>
+                                        </div>
+                                        <div class="product-spec">
+                                            <span>Inventario Mínimo</span>
+                                            <span>${product.minStock}</span>
+                                        </div>
+                                    </div>
+                                    <div class="product-stock">
+                                        <div class="stock-level">
+                                            <div class="stock-indicator ${stockStatus}"></div>
+                                            <span>${statusText}</span>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline btn-small increase-btn" data-model="${model}" style="margin-bottom: 5px;">
+                                                <i class="fas fa-plus"></i> Aumentar
+                                            </button>
+                                            <button class="btn btn-outline btn-small reduce-btn" data-model="${model}" style="background-color: transparent; border-color: var(--warning-color); color: var(--warning-color);">
+                                                <i class="fas fa-minus"></i> Reducir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    inventoryCards.innerHTML = cardsHtml;
+                    
+                    // Volver a vincular eventos de botones
+                    document.querySelectorAll('#inventory .increase-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const model = this.getAttribute('data-model');
+                            showQuickAddModal(model);
+                        });
+                    });
+                    
+                    document.querySelectorAll('#inventory .reduce-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const model = this.getAttribute('data-model');
+                            showReduceModal(model);
+                        });
+                    });
+                }
+            }
+            
+            // Renderizar tabla de registros de importación
+            function renderImportTable() {
+                const tableBody = document.getElementById('import-table-body');
+                tableBody.innerHTML = '';
+                
+                if (importRecords.length === 0) {
+                    return;
+                }
+                
+                importRecords.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.date}</td>
+                        <td>${record.model}</td>
+                        <td>${record.quantity}</td>
+                        <td>${record.shipping}</td>
+                        <td>$${record.cost.toLocaleString()}</td>
+                        <td>${record.status || 'Por Confirmar'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            // Renderizar gráfico de inventario (en tiempo real)
+            function renderInventoryChart() {
+                const ctx = document.getElementById('inventoryChart').getContext('2d');
+                
+                // Si ya existe una instancia del gráfico, destruirla
+                if (window.inventoryChartInstance) {
+                    window.inventoryChartInstance.destroy();
+                }
+                
+                const labels = [];
+                const data = [];
+                const colors = [];
+                
+                for (const model in droneProducts) {
+                    labels.push(droneProducts[model].name);
+                    data.push(droneProducts[model].stock);
+                    colors.push(droneProducts[model].color);
+                }
+                
+                window.inventoryChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 1,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} unidades (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Actualizar todos los reportes
+            function updateAllReports() {
+                updateReportMetrics();
+                renderInventoryTrendChart();
+                renderModelDistributionChart();
+                renderImportAnalysisChart();
+                renderValueByModelChart();
+                renderShippingMethodsChart();
+                renderRecentChangesTable();
+            }
+            
+            // Actualizar métricas de reportes
+            function updateReportMetrics() {
+                // Calcular métricas
+                let totalDrones = 0;
+                let totalValue = 0;
+                let totalImports = 0;
+                let totalImportCost = 0;
+                let inventoryChange = 0;
+                
+                for (const model in droneProducts) {
+                    totalDrones += droneProducts[model].stock;
+                    totalValue += droneProducts[model].stock * droneProducts[model].price;
+                }
+                
+                // Calcular importaciones en el período seleccionado
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - reportTimePeriod);
+                
+                importRecords.forEach(record => {
+                    const recordDate = new Date(record.date);
+                    if (recordDate >= cutoffDate) {
+                        totalImports += record.quantity;
+                        totalImportCost += record.cost;
+                    }
+                });
+                
+                // Calcular cambio de inventario en el período seleccionado
+                inventoryChanges.forEach(change => {
+                    const changeDate = new Date(change.date);
+                    if (changeDate >= cutoffDate) {
+                        inventoryChange += change.change;
+                    }
+                });
+                
+                // Actualizar UI
+                document.getElementById('report-total-drones').textContent = totalDrones;
+                document.getElementById('report-total-value').textContent = `$${totalValue.toLocaleString()}`;
+                document.getElementById('report-imports-total').textContent = totalImports;
+                document.getElementById('report-imports-cost').textContent = `$${totalImportCost.toLocaleString()}`;
+                document.getElementById('report-inventory-change').textContent = inventoryChange > 0 ? `+${inventoryChange}` : inventoryChange;
+                
+                // Color del cambio de inventario
+                const changeElement = document.getElementById('report-inventory-change');
+                if (inventoryChange > 0) {
+                    changeElement.style.color = 'var(--success-color)';
+                } else if (inventoryChange < 0) {
+                    changeElement.style.color = 'var(--danger-color)';
+                } else {
+                    changeElement.style.color = 'var(--dji-dark)';
+                }
+            }
+            
+            // Renderizar gráfico de tendencias de inventario
+            function renderInventoryTrendChart() {
+                const ctx = document.getElementById('inventoryTrendChart').getContext('2d');
+                
+                // Destruir gráfico existente
+                if (inventoryTrendChart) {
+                    inventoryTrendChart.destroy();
+                }
+                
+                // Preparar datos para el período seleccionado
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - reportTimePeriod);
+                
+                // Agrupar cambios por fecha
+                const changesByDate = {};
+                const modelTotals = {
+                    'DJI Agras T40': [],
+                    'DJI Agras T20P': [],
+                    'DJI Mavic 3M': []
+                };
+                
+                // Inicializar con datos actuales
+                const today = new Date().toISOString().split('T')[0];
+                changesByDate[today] = {
+                    'DJI Agras T40': droneProducts['agras-t40'].stock,
+                    'DJI Agras T20P': droneProducts['agras-t20p'].stock,
+                    'DJI Mavic 3M': droneProducts['mavic-3m'].stock
+                };
+                
+                // Procesar cambios históricos
+                inventoryChanges.forEach(change => {
+                    const changeDate = new Date(change.date);
+                    if (changeDate >= cutoffDate) {
+                        if (!changesByDate[change.date]) {
+                            changesByDate[change.date] = {
+                                'DJI Agras T40': droneProducts['agras-t40'].stock,
+                                'DJI Agras T20P': droneProducts['agras-t20p'].stock,
+                                'DJI Mavic 3M': droneProducts['mavic-3m'].stock
+                            };
+                        }
+                    }
+                });
+                
+                // Ordenar fechas
+                const sortedDates = Object.keys(changesByDate).sort();
+                
+                // Preparar datos para cada modelo
+                const labels = sortedDates;
+                const datasets = [
+                    {
+                        label: 'DJI Agras T40',
+                        data: sortedDates.map(date => changesByDate[date]['DJI Agras T40']),
+                        borderColor: '#2c3e50',
+                        backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'DJI Agras T20P',
+                        data: sortedDates.map(date => changesByDate[date]['DJI Agras T20P']),
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'DJI Mavic 3M',
+                        data: sortedDates.map(date => changesByDate[date]['DJI Mavic 3M']),
+                        borderColor: '#8e44ad',
+                        backgroundColor: 'rgba(142, 68, 173, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ];
+                
+                inventoryTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad en Inventario'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Fecha'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Renderizar gráfico de distribución por modelo
+            function renderModelDistributionChart() {
+                const ctx = document.getElementById('modelDistributionChart').getContext('2d');
+                
+                // Destruir gráfico existente
+                if (modelDistributionChart) {
+                    modelDistributionChart.destroy();
+                }
+                
+                const labels = [];
+                const data = [];
+                const colors = [];
+                
+                for (const model in droneProducts) {
+                    labels.push(droneProducts[model].name);
+                    data.push(droneProducts[model].stock);
+                    colors.push(droneProducts[model].color);
+                }
+                
+                modelDistributionChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 1,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Renderizar gráfico de análisis de importaciones
+            function renderImportAnalysisChart() {
+                const ctx = document.getElementById('importAnalysisChart').getContext('2d');
+                
+                // Destruir gráfico existente
+                if (importAnalysisChart) {
+                    importAnalysisChart.destroy();
+                }
+                
+                // Preparar datos para el período seleccionado
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - reportTimePeriod);
+                
+                // Agrupar importaciones por modelo
+                const importsByModel = {
+                    'DJI Agras T40': 0,
+                    'DJI Agras T20P': 0,
+                    'DJI Mavic 3M': 0
+                };
+                
+                importRecords.forEach(record => {
+                    const recordDate = new Date(record.date);
+                    if (recordDate >= cutoffDate) {
+                        importsByModel[record.model] = (importsByModel[record.model] || 0) + record.quantity;
+                    }
+                });
+                
+                const labels = Object.keys(importsByModel);
+                const data = Object.values(importsByModel);
+                const colors = ['#2c3e50', '#27ae60', '#8e44ad'];
+                
+                importAnalysisChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Cantidad Importada',
+                            data: data,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Renderizar gráfico de valor por modelo
+            function renderValueByModelChart() {
+                const ctx = document.getElementById('valueByModelChart').getContext('2d');
+                
+                // Destruir gráfico existente
+                if (valueByModelChart) {
+                    valueByModelChart.destroy();
+                }
+                
+                const labels = [];
+                const data = [];
+                const colors = [];
+                
+                for (const model in droneProducts) {
+                    labels.push(droneProducts[model].name);
+                    data.push(droneProducts[model].stock * droneProducts[model].price);
+                    colors.push(droneProducts[model].color);
+                }
+                
+                valueByModelChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Valor del Inventario ($)',
+                            data: data,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString();
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Valor ($)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Renderizar gráfico de métodos de envío
+            function renderShippingMethodsChart() {
+                const ctx = document.getElementById('shippingMethodsChart').getContext('2d');
+                
+                // Destruir gráfico existente
+                if (shippingMethodsChart) {
+                    shippingMethodsChart.destroy();
+                }
+                
+                // Preparar datos para el período seleccionado
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - reportTimePeriod);
+                
+                // Agrupar importaciones por método de envío
+                const importsByShipping = {
+                    'Transporte Aéreo': 0,
+                    'Transporte Marítimo': 0
+                };
+                
+                importRecords.forEach(record => {
+                    const recordDate = new Date(record.date);
+                    if (recordDate >= cutoffDate) {
+                        importsByShipping[record.shipping] = (importsByShipping[record.shipping] || 0) + 1;
+                    }
+                });
+                
+                const labels = Object.keys(importsByShipping);
+                const data = Object.values(importsByShipping);
+                const colors = ['#3498db', '#e74c3c'];
+                
+                shippingMethodsChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Renderizar tabla de cambios recientes
+            function renderRecentChangesTable() {
+                const tableBody = document.getElementById('recent-changes-body');
+                tableBody.innerHTML = '';
+                
+                // Tomar los últimos 10 cambios
+                const recentChanges = inventoryChanges.slice(0, 10);
+                
+                if (recentChanges.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="5" style="text-align: center; color: #666;">
+                            No hay cambios recientes en el inventario
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                    return;
+                }
+                
+                recentChanges.forEach(change => {
+                    const row = document.createElement('tr');
+                    const changeType = change.change > 0 ? 'Aumento' : 'Reducción';
+                    const changeClass = change.change > 0 ? 'success' : change.change < 0 ? 'danger' : '';
+                    const changeSign = change.change > 0 ? '+' : '';
+                    
+                    row.innerHTML = `
+                        <td>${change.date}</td>
+                        <td>${change.model}</td>
+                        <td>
+                            <span style="color: ${change.change > 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: 600;">
+                                ${changeType}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="color: ${change.change > 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight: 600;">
+                                ${changeSign}${change.change}
+                            </span>
+                        </td>
+                        <td>${change.newStock}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            // Calcular costo de importación
+            function calculateImportCost() {
+                const model = document.getElementById('drone-model').value;
+                const quantity = parseInt(document.getElementById('quantity').value);
+                const shippingMethod = document.getElementById('shipping-method').value;
+                const insuranceLevel = document.getElementById('insurance').value;
+                
+                const totalCost = calculateDroneCost(droneProducts[model].price, quantity, shippingMethod, insuranceLevel);
+                
+                // Mostrar desglose de costos
+                document.getElementById('cost-breakdown').style.display = 'block';
+                
+                // Calcular costos individuales
+                const droneCost = droneProducts[model].price * quantity;
+                const shippingCost = shippingMethod === 'air' ? droneCost * 0.15 : droneCost * 0.08;
+                const tariffCost = droneCost * 0.06; // Arancel de Chile 6%
+                const vatCost = (droneCost + shippingCost + tariffCost) * 0.19; // IVA de Chile 19%
+                const insuranceRate = insuranceLevel === 'basic' ? 0.01 : insuranceLevel === 'standard' ? 0.02 : 0.03;
+                const insuranceCost = droneCost * insuranceRate;
+                const customsCost = 500; // Tarifa fija de despacho de aduana
+                
+                // Actualizar visualización
+                document.getElementById('drone-cost').textContent = `$${droneCost.toLocaleString()}`;
+                document.getElementById('shipping-cost').textContent = `$${shippingCost.toLocaleString()}`;
+                document.getElementById('tariff-cost').textContent = `$${tariffCost.toLocaleString()}`;
+                document.getElementById('vat-cost').textContent = `$${vatCost.toLocaleString()}`;
+                document.getElementById('insurance-cost').textContent = `$${insuranceCost.toLocaleString()}`;
+                document.getElementById('customs-cost').textContent = `$${customsCost.toLocaleString()}`;
+                document.getElementById('total-cost').textContent = `$${totalCost.toLocaleString()}`;
+                
+                // Desplazar hacia el desglose de costos
+                document.getElementById('cost-breakdown').scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            // Calcular costo total del dron
+            function calculateDroneCost(unitPrice, quantity, shippingMethod, insuranceLevel) {
+                const droneCost = unitPrice * quantity;
+                const shippingCost = shippingMethod === 'air' ? droneCost * 0.15 : droneCost * 0.08;
+                const tariffCost = droneCost * 0.06; // Arancel de Chile 6%
+                const vatCost = (droneCost + shippingCost + tariffCost) * 0.19; // IVA de Chile 19%
+                const insuranceRate = insuranceLevel === 'basic' ? 0.01 : insuranceLevel === 'standard' ? 0.02 : 0.03;
+                const insuranceCost = droneCost * insuranceRate;
+                const customsCost = 500; // Tarifa fija de despacho de aduana
+                
+                return droneCost + shippingCost + tariffCost + vatCost + insuranceCost + customsCost;
+            }
+            
+            // Mostrar mensaje de éxito
+            function showSuccessMessage(message) {
+                const successElement = document.getElementById('success-message');
+                const successText = document.getElementById('success-text');
+                
+                successText.textContent = message;
+                successElement.style.display = 'block';
+                
+                // Ocultar automáticamente después de 3 segundos
+                setTimeout(() => {
+                    successElement.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Mostrar mensaje de advertencia
+            function showWarningMessage(message) {
+                const warningElement = document.getElementById('warning-message');
+                const warningText = document.getElementById('warning-text');
+                
+                warningText.textContent = message;
+                warningElement.style.display = 'block';
+                
+                // Ocultar automáticamente después de 3 segundos
+                setTimeout(() => {
+                    warningElement.style.display = 'none';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
